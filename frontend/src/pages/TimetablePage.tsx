@@ -12,7 +12,9 @@ import {
   Layers,
   Sparkles,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -31,6 +33,19 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
   const [filterValue, setFilterValue] = useState<string>('');
   const [selectedDay, setSelectedDay] = useState<string>('ALL');
   const [validatorReport, setValidatorReport] = useState<any | null>(null);
+  const [jobState, setJobState] = useState<{
+    id: string | null;
+    status: 'idle' | 'running' | 'completed' | 'failed';
+    progress: number;
+    stage: string;
+    error?: string | null;
+  }>({
+    id: null,
+    status: 'idle',
+    progress: 0,
+    stage: '',
+    error: null
+  });
 
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
   const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -61,18 +76,66 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
     setIsSolving(true);
     setValidatorReport(null);
     try {
-      const res = await api.generateTimetable();
-      setValidatorReport({
-        hard_violations: res.hard_violations,
-        soft_total: res.soft_total,
-        duration: res.solver_duration,
-        scheduled: res.total_sessions_scheduled
+      // Start background generation job
+      const startRes = await api.startGenerateJob();
+      setJobState({
+        id: startRes.job_id,
+        status: 'running',
+        progress: startRes.progress || 5,
+        stage: startRes.stage || 'Starting background solver...',
+        error: null
       });
-      loadTimetable();
+
+      // Poll status every 1.5 seconds until completion or failure
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await api.getGenerateJobStatus(startRes.job_id);
+          setJobState({
+            id: startRes.job_id,
+            status: pollRes.status,
+            progress: pollRes.progress || 0,
+            stage: pollRes.stage || '',
+            error: pollRes.error || null
+          });
+
+          if (pollRes.status === 'completed') {
+            clearInterval(pollInterval);
+            setIsSolving(false);
+            if (pollRes.result) {
+              setValidatorReport({
+                hard_violations: pollRes.result.hard_violations,
+                soft_total: pollRes.result.soft_total,
+                duration: pollRes.result.solver_duration,
+                scheduled: pollRes.result.total_sessions_scheduled
+              });
+            }
+            loadTimetable();
+          } else if (pollRes.status === 'failed') {
+            clearInterval(pollInterval);
+            setIsSolving(false);
+          }
+        } catch (pollErr: any) {
+          clearInterval(pollInterval);
+          setIsSolving(false);
+          setJobState({
+            id: startRes.job_id,
+            status: 'failed',
+            progress: 100,
+            stage: 'Polling error',
+            error: pollErr?.message || 'Failed to poll solver status'
+          });
+        }
+      }, 1500);
+
     } catch (err: any) {
-      alert(`Generation error: ${err.message}`);
-    } finally {
       setIsSolving(false);
+      setJobState({
+        id: null,
+        status: 'failed',
+        progress: 100,
+        stage: 'Failed to initiate job',
+        error: err?.message || 'Could not reach backend generation service'
+      });
     }
   };
 
@@ -151,6 +214,49 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
             </a>
           </div>
         </div>
+
+        {/* Background Solver Progress Card */}
+        {jobState.status === 'running' && (
+          <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 text-xs space-y-2.5">
+            <div className="flex items-center justify-between text-blue-900 font-semibold">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                <span>Background Timetable Generation in Progress...</span>
+              </div>
+              <span className="font-mono text-blue-700">{jobState.progress}%</span>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-2 rounded-full bg-blue-200/60 overflow-hidden">
+              <div
+                className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                style={{ width: `${jobState.progress}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <span className="text-blue-800 font-medium">{jobState.stage}</span>
+              <span>CP-SAT search (est. 30–45s)</span>
+            </div>
+          </div>
+        )}
+
+        {/* Solver Failure / Retry Banner */}
+        {jobState.status === 'failed' && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <div>
+                <strong>Solver Generation Failed:</strong> {jobState.error || 'An error occurred during background execution.'}
+              </div>
+            </div>
+            <button
+              onClick={handleGenerate}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-all shadow-xs"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Retry Generation</span>
+            </button>
+          </div>
+        )}
 
         {/* Validator Status Notification */}
         {validatorReport && (

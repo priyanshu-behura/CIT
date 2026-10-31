@@ -86,6 +86,10 @@ export const api = {
   // Timetable & Solver
   generateTimetable: (): Promise<any> =>
     fetchJson('/api/v1/timetable/generate', { method: 'POST' }),
+  startGenerateJob: (): Promise<{ job_id: string; status: string; progress: number; stage: string }> =>
+    fetchJson('/api/v1/timetable/generate-async', { method: 'POST' }),
+  getGenerateJobStatus: (jobId: string): Promise<any> =>
+    fetchJson(`/api/v1/timetable/jobs/${jobId}`),
   getCurrentTimetable: (params: { group?: string; faculty_id?: string; room_id?: string; day?: string } = {}): Promise<{
     dataset_id: string;
     total_scheduled: number;
