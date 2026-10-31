@@ -234,6 +234,11 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 The backend API is now running at `http://127.0.0.1:8000` (docs at `http://127.0.0.1:8000/docs`).
 
+> [!IMPORTANT]
+> **Environment Configuration & Deployment Secret:**  
+> Copy `.env.example` to `.env`. In local development/test mode, an ephemeral random 256-bit+ secret is automatically generated at startup if unset. For production deployments (`APP_ENV=production`), setting a real secret key via `CIT_SECRET_KEY` is strictly required (generate using `python -c "import secrets; print(secrets.token_urlsafe(48))"`).  
+> The 4 demo credentials listed above (`admin@cit.edu`, `coordinator.cse@cit.edu`, `faculty.sm@cit.edu`, `club.robotics@cit.edu`) are documented strictly for demo access and evaluator testing.
+
 ### 2. Frontend Setup & Startup
 
 ```bash

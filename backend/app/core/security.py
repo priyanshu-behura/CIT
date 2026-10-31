@@ -1,11 +1,36 @@
 import os
 import hashlib
 import secrets
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import jwt
 
-SECRET_KEY = os.getenv("TECH_ZEPHYR_SECRET_KEY", "tech-zephyr-cit-secret-key-2026-hackathon-token")
+logger = logging.getLogger(__name__)
+
+# Resolve secret from environment:
+# 1. Primary: CIT_SECRET_KEY
+# 2. Backward compatibility fallback: TECH_ZEPHYR_SECRET_KEY
+_secret = os.getenv("CIT_SECRET_KEY") or os.getenv("TECH_ZEPHYR_SECRET_KEY")
+_app_env = (os.getenv("APP_ENV") or "").lower().strip()
+
+if _secret:
+    SECRET_KEY = _secret
+elif _app_env == "production":
+    raise RuntimeError(
+        "Production startup failure: Neither CIT_SECRET_KEY nor TECH_ZEPHYR_SECRET_KEY is configured in production environment (APP_ENV=production). "
+        "A secure random secret must be configured for JWT signing in production deployments. "
+        "Generate one using: python -c \"import secrets; print(secrets.token_urlsafe(48))\" and set CIT_SECRET_KEY."
+    )
+else:
+    SECRET_KEY = secrets.token_urlsafe(48)
+    logger.warning(
+        "WARNING: Neither CIT_SECRET_KEY nor TECH_ZEPHYR_SECRET_KEY is set. "
+        "Generated an ephemeral random secret at import time for development/test mode. "
+        "All active authentication tokens will be invalidated on server restart. "
+        "Set CIT_SECRET_KEY to persist tokens across restarts."
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
