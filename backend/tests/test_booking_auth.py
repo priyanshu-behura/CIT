@@ -4,10 +4,12 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.security import create_access_token
 from datetime import timedelta
+from pathlib import Path
 
 client = TestClient(app)
 
-DB_PATH = "tech_zephyr.db"
+DB_PATH = Path(__file__).resolve().parent.parent / "tech_zephyr.db"
+
 
 
 def get_token(email: str, password: str) -> str:

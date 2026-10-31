@@ -181,6 +181,24 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
             </span>
           </CardHeader>
 
+          {/* Actionable Follow-up Questions Banner for Missing / Vague Fields */}
+          {extracted.needs_input && extracted.follow_up_questions && extracted.follow_up_questions.length > 0 && (
+            <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>Additional Details Needed (Review Draft Below Before Submitting)</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-slate-700 pl-1">
+                {extracted.follow_up_questions.map((q: string, idx: number) => (
+                  <li key={idx}><span className="font-medium text-amber-900">{q}</span></li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-amber-700 italic">
+                Fields highlighted in amber were not fully specified in your prompt. Please verify or update their values below before confirming.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-3">
               <div>
@@ -209,11 +227,20 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Day of Week</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 font-bold">Day of Week</label>
+                    {extracted.needs_input_fields?.includes('day') && (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Needs Input</span>
+                    )}
+                  </div>
                   <select
                     value={extracted.day}
                     onChange={(e) => setExtracted({ ...extracted, day: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono"
+                    className={`w-full px-3 py-2 rounded-xl border font-mono ${
+                      extracted.needs_input_fields?.includes('day')
+                        ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-400/40'
+                        : 'border-slate-200 bg-white'
+                    }`}
                   >
                     {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -222,12 +249,21 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Attendance</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 font-bold">Attendance</label>
+                    {extracted.needs_input_fields?.includes('attendance') && (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Needs Input</span>
+                    )}
+                  </div>
                   <input
                     type="number"
                     value={extracted.attendance}
                     onChange={(e) => setExtracted({ ...extracted, attendance: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono"
+                    className={`w-full px-3 py-2 rounded-xl border font-mono ${
+                      extracted.needs_input_fields?.includes('attendance')
+                        ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-400/40'
+                        : 'border-slate-200'
+                    }`}
                   />
                 </div>
               </div>
@@ -236,11 +272,20 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Start Period</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 font-bold">Start Period</label>
+                    {extracted.needs_input_fields?.includes('time') && (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Needs Input</span>
+                    )}
+                  </div>
                   <select
                     value={extracted.start_period}
                     onChange={(e) => setExtracted({ ...extracted, start_period: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono"
+                    className={`w-full px-3 py-2 rounded-xl border font-mono ${
+                      extracted.needs_input_fields?.includes('time')
+                        ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-400/40'
+                        : 'border-slate-200 bg-white'
+                    }`}
                   >
                     {[1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12].map((p) => (
                       <option key={p} value={p}>P{p}</option>
@@ -249,11 +294,20 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">End Period</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 font-bold">End Period</label>
+                    {extracted.needs_input_fields?.includes('time') && (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Needs Input</span>
+                    )}
+                  </div>
                   <select
                     value={extracted.end_period}
                     onChange={(e) => setExtracted({ ...extracted, end_period: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono"
+                    className={`w-full px-3 py-2 rounded-xl border font-mono ${
+                      extracted.needs_input_fields?.includes('time')
+                        ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-400/40'
+                        : 'border-slate-200 bg-white'
+                    }`}
                   >
                     {[1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13].map((p) => (
                       <option key={p} value={p}>P{p}</option>
@@ -263,12 +317,21 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
               </div>
 
               <div>
-                <label className="block text-slate-500 font-bold mb-1">Preferred Venue</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-500 font-bold">Preferred Venue</label>
+                  {extracted.needs_input_fields?.includes('venue') && (
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Needs Input</span>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={extracted.preferred_room_id}
                   onChange={(e) => setExtracted({ ...extracted, preferred_room_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold"
+                  className={`w-full px-3 py-2 rounded-xl border font-mono font-semibold ${
+                    extracted.needs_input_fields?.includes('venue')
+                      ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-400/40'
+                      : 'border-slate-200'
+                  }`}
                 />
               </div>
 
