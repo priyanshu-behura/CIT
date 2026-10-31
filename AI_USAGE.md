@@ -88,3 +88,45 @@ Soft penalty: 221  {'S1': 0, 'S2': 116, 'S3': 21, 'S4': 84, 'S5': 0, 'S6': 0}
 Bookings: score 64.5 | approved 21, alternatives 2, rejected 2, session overrides 0, priority inversions 0
 Exam soft penalty: 0
 ```
+
+---
+
+## 5. Google Gemini AI Assistant Integration (Phase 2)
+
+### 1. SDK and Model Configuration
+- **Official SDK:** Installed and configured `google-genai` (v2.34.0) in the backend virtual environment.
+- **Configurable Model:** Configured via `settings.GEMINI_MODEL`, defaulting to `gemini-2.5-flash` with full environment variable override support.
+- **API Secret Security:**
+  - `GEMINI_API_KEY` is loaded strictly on the server side from `backend/.env` (with root `.env` fallback).
+  - Explicit gitignore rules protect all `.env` variants (`.env`, `*.env`, `.env.*`, `backend/.env*`).
+  - The API key is never bundled, exposed to Vite, or transmitted to the client browser.
+  - Secret keys are never printed in server logs or error traces.
+
+### 2. Architectural Boundaries & Institutional Governance
+- **Strict Role Separation:**
+  - **Google Gemini (Interpretation Layer):** Interprets English and Hinglish queries, explains complex schedule trade-offs and disruption impacts in human-readable prose, and parses unstructured event requests into structured draft forms with clarifying follow-up questions.
+  - **Deterministic Backend & OR-Tools (Authority Layer):** Solves all scheduling constraints (H1–H15, S1–S6), evaluates timetable validity, performs candidate elimination diagnostics, enforces room capacities and lunch breaks, and handles official booking approvals.
+- **Prohibited AI Actions:**
+  - Gemini **NEVER** decides timetable feasibility or validity.
+  - Gemini **NEVER** assigns rooms or modifies database tables directly.
+  - Gemini **NEVER** approves booking requests (requires role-based admin/coordinator verification).
+  - Gemini **NEVER** overrides, weakens, or bypasses hard constraints (H1–H15).
+
+### 3. Structured Booking Workflow
+1. User types an event booking request in natural English or Hinglish (e.g., *"Book seminar hall for robotics workshop on Friday from 2 PM to 5 PM for 50 students"*).
+2. The AI assistant extracts structured parameters: `title`, `category`, `day`, `start_period`, `end_period`, `attendance`, `preferred_room_id`, `room_types`, `needs`, and `needs_accessible`.
+3. If essential fields are missing or vague, the assistant flags `needs_input=True` and generates actionable `follow_up_questions`.
+4. The frontend renders an interactive, editable **Draft Booking Preview Card**.
+5. Only when the user reviews, adjusts, and confirms by clicking **"Confirm & Submit Booking"** is the payload transmitted to `POST /api/v1/bookings`, where deterministic server-side role authorization and conflict checks are executed.
+
+### 4. Resilient Fallback Mechanism
+- If `GEMINI_API_KEY` is absent or empty, the system automatically routes all queries to the deterministic CIT knowledge engine.
+- If a Gemini API call encounters a network timeout, rate limit, authentication failure, or invalid response, the service catches the exception, logs a sanitized warning, and immediately serves the deterministic grounded response.
+- Chat endpoints (`POST /api/v1/chat/query`) **never crash or return HTTP 500** due to upstream LLM failures.
+
+### 5. Prompt Injection Defense & Safety
+- **Dual-Layer Protection:**
+  1. *Heuristic & Pattern Interceptor:* Systematically catches jailbreak patterns (`ignore previous instructions`, `override constraint`, `you are now admin`, `force approve booking`).
+  2. *System Instruction Grounding:* The system prompt strictly grounds Gemini in CIT facts and explicitly instructs the model to decline any attempt to override institutional constraints or bypass role-based workflows.
+- All user inputs are treated as untrusted data.
+

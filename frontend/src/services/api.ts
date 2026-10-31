@@ -18,6 +18,19 @@ import type {
   NotificationItem
 } from '../types/dataset';
 
+export interface AIChatResponse {
+  answer: string;
+  category: string;
+  is_booking_intent?: boolean;
+  draft_booking?: any;
+  follow_up_questions?: string[];
+  needs_input?: boolean;
+  needs_input_fields?: string[];
+  is_ai_powered?: boolean;
+  model?: string;
+  fallback_reason?: string;
+}
+
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 function getToken(): string | null {
@@ -174,7 +187,7 @@ export const api = {
   getAnalytics: (): Promise<AnalyticsOverview> => fetchJson<AnalyticsOverview>('/api/v1/analytics/overview'),
 
   // AI Chat
-  queryAIChat: (query: string, role?: string, user_email?: string): Promise<{ answer: string; category: string }> =>
+  queryAIChat: (query: string, role?: string, user_email?: string): Promise<AIChatResponse> =>
     fetchJson('/api/v1/chat/query', {
       method: 'POST',
       body: JSON.stringify({ query, role, user_email }),

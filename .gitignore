@@ -17,9 +17,14 @@ frontend/dist/
 dist/
 *.local
 
-# Environment variables
+# Environment variables & secrets
 .env
 *.env
+.env.*
+*.env.*
+backend/.env
+backend/.env.*
+!.env.example
 
 # SQLite Database & Storage
 *.db

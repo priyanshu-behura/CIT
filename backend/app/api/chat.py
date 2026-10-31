@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from app.services.ai_chat_service import ai_chat_service
 
 router = APIRouter(prefix="/chat", tags=["AI Campus Assistant"])
@@ -12,12 +12,27 @@ class ChatQueryRequest(BaseModel):
     user_email: Optional[str] = None
 
 
-@router.post("/query")
+class ChatQueryResponse(BaseModel):
+    answer: str
+    category: str
+    is_booking_intent: bool = False
+    draft_booking: Optional[Dict[str, Any]] = None
+    follow_up_questions: List[str] = []
+    needs_input: bool = False
+    needs_input_fields: List[str] = []
+    is_ai_powered: bool = False
+    model: Optional[str] = None
+    fallback_reason: Optional[str] = None
+
+
+@router.post("/query", response_model=ChatQueryResponse)
 def chat_query(req: ChatQueryRequest):
-    """Answers user questions grounded in official CIT dataset facts, timetable, and booking policies."""
+    """
+    Answers user questions grounded in official CIT dataset facts, timetable, and booking policies.
+    Integrates Google Gemini with strict institutional governance and resilient deterministic fallback.
+    """
     return ai_chat_service.answer_query(
         query=req.query,
         user_role=req.role or "guest",
         user_email=req.user_email
     )
-

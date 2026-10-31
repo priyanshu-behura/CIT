@@ -38,7 +38,14 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
     ]
 
-    model_config = SettingsConfigDict(env_file=".env", extra="allow")
+    # LLM API Configuration
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
+    model_config = SettingsConfigDict(
+        env_file=(str(Path(__file__).resolve().parent.parent.parent / ".env"), ".env"),
+        extra="allow"
+    )
 
 
 settings = Settings()
