@@ -99,6 +99,9 @@
 | **JOB-05** | Dynamic baseline export endpoint | **PASS** | `GET /export/schedule.json` serves current baseline record from SQLite (`test_export_dynamic.py`). |
 | **JOB-06** | Strict export type isolation | **PASS** | Baseline export cannot return disruption schedule, and disruption export cannot return baseline (`test_export_isolation.py`). |
 | **JOB-07** | Protection of submission files on disk | **PASS** | SHA256 hashes of `exports/*.json` remain identical before and after all runs. |
+| **PH1-01** | Transactional Admin Reset to Baseline Snapshot | **PASS** | Implemented `POST /api/v1/admin/reset` with server-side admin role verification (`role == 'admin'`), `GENERATION_LOCK` protection, SQLite transaction boundaries, snapshot restoration from `exports/schedule.json`, re-seeding of all 25 official booking requests, and light-theme modal in UI (`ce1d859`). Tested in `test_admin_reset.py` and Playwright browser.
+| **PH2-01** | Disruption File Upload & Validation Pipeline | **PASS** | Implemented `POST /api/v1/disruptions/upload` with 1 MB size boundary, schema checks, authoritative room/faculty/session ID validation, and UI drag-and-drop file picker (`5b94733`). Verified in `test_disruption_upload.py` and full Playwright browser lifecycle (Upload -> Simulate 8 moves -> Admin Approve -> Official Validator 0 hard / 238 soft).
+| **PH3-01** | Deterministic Infeasibility Constraint Elimination Diagnostics | **PASS** | Implemented candidate (day, period, room) enumeration and authoritative constraint-elimination classification in `infeasibility_diagnostics.py` and safe simulation rejection in `disruption_service.py` (`bdf6646`). Verified via 3 distinct infeasible scenarios in `test_infeasibility_diagnostics.py` and Playwright browser alert check. Zero baseline DB mutation.
 
 ---
 
@@ -106,9 +109,6 @@
 
 | Deferred Task | Rationale & Recommendation | Status |
 | :--- | :--- | :---: |
-| **Admin Demo Data Reset UI** | Resetting database to seed state can be done via re-seed script; implementing a destructive UI endpoint requires role safeguards and audit trail. | **PENDING** |
-| **Disruption JSON File Upload UI** | Existing system accepts disruptions via API and built-in scenarios. File upload with custom JSON schema validation is deferred to avoid runtime regressions. | **PENDING** |
-| **Deterministic Infeasibility Explanation System** | Basic conflicting session reporting is enabled; generating multi-variable constraint conflict proofs (e.g., Farkas lemma/minimal unsatisfiable core) requires significant solver instrumentation. | **PENDING** |
 | **Grounded LLM Session Explanations** | All explanations are currently rule-based and deterministic. Integrating an external LLM for conversational summaries was deferred to maintain zero external network dependency. | **PENDING** |
 | **Full 4-Role Cross-Browser Matrix QA** | Desktop (1440px) and mobile (390px) responsive layouts and critical auth/generation browser journeys were tested with Playwright; exhaustive manual QA across Safari/Firefox is deferred. | **PENDING** |
 | **Process Crash Mid-Job Browser Recovery** | Documented in README that in-memory job terminates on process kill and UI offers Retry. Automated SIGKILL fault-injection browser test deferred. | **PENDING** |
