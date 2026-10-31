@@ -239,6 +239,12 @@ The backend API is now running at `http://127.0.0.1:8000` (docs at `http://127.0
 > Copy `.env.example` to `.env`. In local development/test mode, an ephemeral random 256-bit+ secret is automatically generated at startup if unset. For production deployments (`APP_ENV=production`), setting a real secret key via `CIT_SECRET_KEY` is strictly required (generate using `python -c "import secrets; print(secrets.token_urlsafe(48))"`).  
 > The 4 demo credentials listed above (`admin@cit.edu`, `coordinator.cse@cit.edu`, `faculty.sm@cit.edu`, `club.robotics@cit.edu`) are documented strictly for demo access and evaluator testing.
 
+> [!NOTE]
+> **Process Architecture & Concurrency (Single-Worker Requirement):**  
+> Schedule generation executes asynchronously in a background thread managed by an in-process thread lock (`GENERATION_LOCK`) to guarantee that only one solver runs at any given time and prevent CPU starvation or concurrent write races.  
+> - **Single-Worker Execution**: Run the server with a single worker process (`uvicorn app.main:app --workers 1`). Running multiple OS worker processes would isolate in-memory job registries between processes, which could cause status polling requests to land on non-solver processes.  
+> - **Mid-Job Server Restart Handling**: If the backend process restarts during generation, the in-memory job terminates cleanly. Polling clients immediately detect this and offer a single-click "Retry Generation" action in the UI. No incomplete or corrupted schedule is ever committed to SQLite, as database persistence occurs in an atomic transaction only after complete validator verification.
+
 ### 2. Frontend Setup & Startup
 
 ```bash

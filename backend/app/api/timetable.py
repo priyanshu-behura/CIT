@@ -19,7 +19,10 @@ import validator
 router = APIRouter(prefix="/timetable", tags=["Timetable Management"])
 scheduler_service = SchedulerService()
 
-# In-memory background generation jobs registry
+# In-memory background generation jobs registry and concurrency lock
+import threading
+GENERATION_LOCK = threading.Lock()
+ACTIVE_JOB_ID: Optional[str] = None
 GENERATION_JOBS: Dict[str, Dict[str, Any]] = {}
 
 
@@ -121,40 +124,59 @@ def _execute_generation_job(job_id: str):
         job["progress"] = 100
         job["stage"] = "Solver failed with unexpected error"
         job["error"] = str(e)
+    finally:
+        global ACTIVE_JOB_ID
+        with GENERATION_LOCK:
+            if ACTIVE_JOB_ID == job_id:
+                ACTIVE_JOB_ID = None
 
 
 @router.post("/generate-async")
 def generate_timetable_async():
     """
     Start schedule generation as a background job.
-    Returns a job_id immediately so clients can poll status, monitor progress,
-    and handle retry states without risking HTTP timeouts.
+    Uses a thread lock to ensure only one solver runs at a time.
+    A second request while a job is running returns HTTP 409 Conflict with the active job id.
     """
     import uuid
-    import threading
+    global ACTIVE_JOB_ID
+    with GENERATION_LOCK:
+        if ACTIVE_JOB_ID:
+            active_job = GENERATION_JOBS.get(ACTIVE_JOB_ID, {})
+            if active_job.get("status") in ("pending", "running"):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "A timetable generation job is already running.",
+                        "active_job_id": ACTIVE_JOB_ID,
+                        "progress": active_job.get("progress", 0),
+                        "stage": active_job.get("stage", "Running solver")
+                    }
+                )
 
-    job_id = f"job-{uuid.uuid4().hex[:10]}"
-    job = {
-        "job_id": job_id,
-        "status": "pending",
-        "progress": 5,
-        "stage": "Job queued for background solver execution",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "completed_at": None,
-        "result": None,
-        "error": None
-    }
-    GENERATION_JOBS[job_id] = job
+        job_id = f"job-{uuid.uuid4().hex[:10]}"
+        job = {
+            "job_id": job_id,
+            "status": "pending",
+            "progress": 5,
+            "stage": "Job queued for background solver execution",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": None,
+            "result": None,
+            "error": None
+        }
+        GENERATION_JOBS[job_id] = job
+        ACTIVE_JOB_ID = job_id
 
-    worker_thread = threading.Thread(target=_execute_generation_job, args=(job_id,), daemon=True)
-    worker_thread.start()
+        worker_thread = threading.Thread(target=_execute_generation_job, args=(job_id,), daemon=True)
+        worker_thread.start()
 
-    return {
-        "job_id": job_id,
-        "status": "pending",
-        "progress": 5,
-        "stage": "Job queued for background solver execution"
-    }
+        return {
+            "job_id": job_id,
+            "status": "pending",
+            "progress": 5,
+            "stage": "Job queued for background solver execution"
+        }
 
 
 @router.get("/jobs/{job_id}")
@@ -168,6 +190,23 @@ def get_generation_job_status(job_id: str):
 
 @router.post("/generate")
 def generate_timetable(current_user: Optional[Dict[str, Any]] = None):
+    """
+    Deterministic schedule generation using Google OR-Tools CP-SAT.
+    Generates all 189 teaching sessions, 41 midsem exams, and Spectra week bookings.
+    Exports to exports/schedule.json and verifies with official validator.
+    """
+    global ACTIVE_JOB_ID
+    with GENERATION_LOCK:
+        if ACTIVE_JOB_ID:
+            active_job = GENERATION_JOBS.get(ACTIVE_JOB_ID, {})
+            if active_job.get("status") in ("pending", "running"):
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "Cannot start synchronous solve: a background generation job is already running.",
+                        "active_job_id": ACTIVE_JOB_ID
+                    }
+                )
     """
     Deterministic schedule generation using Google OR-Tools CP-SAT.
     Generates all 189 teaching sessions, 41 midsem exams, and Spectra week bookings.
