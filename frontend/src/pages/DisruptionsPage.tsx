@@ -11,7 +11,9 @@ import {
   FileCheck2,
   Layers,
   ArrowRightLeft,
-  RotateCcw
+  RotateCcw,
+  Upload,
+  FileCode
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -29,6 +31,11 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
   const [simulationResult, setSimulationResult] = useState<any | null>(null);
   const [commitStatus, setCommitStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // File Upload State
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDisruptions = async () => {
@@ -66,6 +73,42 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
       setCommitStatus(`Revised schedule approved & committed! Saved to exports/schedule_after.json.`);
     } catch (err: any) {
       setError(err?.message || 'Approval failed');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.json')) {
+      setUploadError('Invalid file type: Please upload a JSON file (.json).');
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      setUploadError(`File too large: ${file.name} is ${(file.size / 1024).toFixed(1)} KB (Maximum 1 MB allowed).`);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      const res = await api.uploadDisruptionFile(file);
+      setUploadSuccess(`Uploaded & Validated scenario '${res.disruption.id}': Ready for simulation.`);
+      // Reload disruptions list and select newly uploaded scenario
+      const list = await api.getDisruptions();
+      setDisruptions(list);
+      const match = list.find((d) => d.id === res.disruption.id) || list[0];
+      setSelectedDisruption(match);
+      setSimulationResult(null);
+      setCommitStatus(null);
+    } catch (err: any) {
+      setUploadError(err?.message || 'Failed to parse and validate disruption scenario file.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -109,6 +152,59 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
           <span>{commitStatus}</span>
         </div>
       )}
+
+      {/* Upload Feedback Banners */}
+      {uploadError && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+            <span>{uploadError}</span>
+          </div>
+          <button onClick={() => setUploadError(null)} className="text-slate-400 hover:text-slate-600 font-semibold text-xs">Dismiss</button>
+        </div>
+      )}
+
+      {uploadSuccess && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>{uploadSuccess}</span>
+          </div>
+          <button onClick={() => setUploadSuccess(null)} className="text-slate-400 hover:text-slate-600 font-semibold text-xs">Dismiss</button>
+        </div>
+      )}
+
+      {/* Upload Disruption Scenario Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4 text-blue-600" />
+            <CardTitle>Upload Disruption Scenario (.json)</CardTitle>
+          </div>
+          <CardDescription>
+            Upload a custom scenario JSON (e.g., sample_disruption.json) to simulate minimal-movement rescheduling before administrative approval.
+          </CardDescription>
+        </CardHeader>
+        <div className="p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 hover:bg-blue-50/20 hover:border-blue-400 transition-colors flex flex-col items-center justify-center text-center gap-2">
+          <FileCode className="h-8 w-8 text-slate-400" />
+          <div>
+            <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2">
+              <span>{isUploading ? 'Validating Scenario...' : 'Select JSON Disruption File'}</span>
+              <input
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                disabled={isUploading}
+                onChange={handleFileUpload}
+              />
+            </label>
+            <span className="text-slate-500 text-xs"> or drag and drop here</span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Accepts official competition format: faculty leaves, room closures, or added curriculum sessions (Max 1 MB)
+          </p>
+        </div>
+      </Card>
 
       {/* Disruption Scenarios Selector */}
       <Card>

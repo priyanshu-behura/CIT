@@ -156,6 +156,15 @@ export const api = {
   getDisruptions: (): Promise<DisruptionRecord[]> => fetchJson<DisruptionRecord[]>('/api/v1/disruptions'),
   createDisruption: (data: any): Promise<any> =>
     fetchJson('/api/v1/disruptions', { method: 'POST', body: JSON.stringify(data) }),
+  uploadDisruptionFile: (file: File): Promise<{ status: string; message: string; disruption: any }> => {
+    return file.text().then((text) =>
+      fetchJson('/api/v1/disruptions/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: text,
+      })
+    );
+  },
   simulateDisruption: (disruptionId: string): Promise<any> =>
     fetchJson(`/api/v1/disruptions/${disruptionId}/simulate`, { method: 'POST' }),
   approveDisruption: (disruptionId: string): Promise<any> =>

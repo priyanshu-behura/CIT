@@ -36,22 +36,39 @@ class DisruptionService:
         return results
 
     def create_disruption(self, disruption_id: str, title: str, description: str, changes: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Register a new disruption scenario."""
+        """Register or update a disruption scenario."""
         conn = get_db_connection()
         cursor = conn.cursor()
         now = datetime.now(timezone.utc).isoformat()
 
-        cursor.execute("""
-        INSERT INTO disruptions (id, title, description, changes, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            disruption_id,
-            title,
-            description,
-            json.dumps(changes),
-            "pending",
-            now
-        ))
+        cursor.execute("SELECT id FROM disruptions WHERE id = ?", (disruption_id,))
+        existing = cursor.fetchone()
+
+        if existing:
+            cursor.execute("""
+            UPDATE disruptions SET
+                title = ?,
+                description = ?,
+                changes = ?,
+                status = 'pending',
+                rescheduled_json = NULL,
+                stability_metrics = NULL,
+                approved_by = NULL,
+                approved_at = ?
+            WHERE id = ?
+            """, (title, description, json.dumps(changes), now, disruption_id))
+        else:
+            cursor.execute("""
+            INSERT INTO disruptions (id, title, description, changes, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                disruption_id,
+                title,
+                description,
+                json.dumps(changes),
+                "pending",
+                now
+            ))
 
         cursor.execute("""
         INSERT INTO notifications (target_role, target_email, title, message, type, created_at)
