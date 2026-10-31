@@ -34,6 +34,8 @@ class BookingDecisionRequest(BaseModel):
 
 class NLPParseRequest(BaseModel):
     prompt: str = Field(..., min_length=5)
+    reference_date: Optional[str] = Field(default=None, description="ISO format YYYY-MM-DD reference date for resolving relative days like kal, aaj, parso")
+
 
 
 @router.get("")
@@ -115,7 +117,7 @@ def parse_natural_language_booking(req: NLPParseRequest):
     Parse English or Hinglish natural-language prompt and extract structured booking parameters.
     User reviews and confirms draft in the UI before submission.
     """
-    extracted = nlp_booking_service.parse_booking_prompt(req.prompt)
+    extracted = nlp_booking_service.parse_booking_prompt(req.prompt, req.reference_date)
     return extracted
 
 

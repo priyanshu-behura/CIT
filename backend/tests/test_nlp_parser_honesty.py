@@ -42,18 +42,35 @@ def test_room_codes_not_parsed_as_attendance():
 def test_hinglish_vague_times_and_dates():
     """
     Test Hinglish time expressions:
-    - 'kal shaam ko': day=TUE (next day), time=evening P10-P12
+    - 'kal shaam ko': resolves to target day relative to reference date, time=evening P10-P12, marked needs_input
+    - 'aaj' and 'parso': resolve to target days relative to reference date, marked needs_input
     - 'agle hafte': day marked as needs_input with confirmation question
     """
-    # 1. 'kal shaam ko'
-    res_kal = nlp_booking_service.parse_booking_prompt("Humein kal shaam ko auditorium chahiye for annual play")
+    # 1. 'kal shaam ko' with reference date 2026-11-02 (Monday) -> maps to TUE
+    res_kal = nlp_booking_service.parse_booking_prompt(
+        "Humein kal shaam ko auditorium chahiye for annual play",
+        reference_date="2026-11-02"
+    )
     assert res_kal["day"] == "TUE"
+    assert res_kal["is_relative_day"] is True
+    assert "day" in res_kal["needs_input_fields"]
     assert res_kal["start_period"] == 10
     assert res_kal["end_period"] == 12
     assert "time" not in res_kal["needs_input_fields"]
     assert res_kal["preferred_room_id"] == "AUD"
 
-    # 2. 'agle hafte'
+    # 2. 'aaj' and 'parso' with reference date 2026-11-02 (Monday)
+    res_aaj = nlp_booking_service.parse_booking_prompt("CR-101 aaj 2 pm to 4 pm for 30 students", reference_date="2026-11-02")
+    assert res_aaj["day"] == "MON"
+    assert res_aaj["is_relative_day"] is True
+    assert "day" in res_aaj["needs_input_fields"]
+
+    res_parso = nlp_booking_service.parse_booking_prompt("CR-101 parso 2 pm to 4 pm for 30 students", reference_date="2026-11-02")
+    assert res_parso["day"] == "WED"
+    assert res_parso["is_relative_day"] is True
+    assert "day" in res_parso["needs_input_fields"]
+
+    # 3. 'agle hafte'
     res_agle = nlp_booking_service.parse_booking_prompt("Seminar hall chahiye agle hafte for 60 students")
     assert "day" in res_agle["needs_input_fields"]
     assert any("agle hafte" in q for q in res_agle["follow_up_questions"])
@@ -69,3 +86,4 @@ def test_parser_draft_is_pure_in_memory_no_unwanted_writes():
     _ = nlp_booking_service.parse_booking_prompt("Book auditorium on Wednesday 2 pm to 5 pm for 200 students")
     after_count = len(booking_service.get_all_bookings())
     assert after_count == initial_count
+

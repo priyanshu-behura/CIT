@@ -176,9 +176,16 @@ export const AssistantPage: React.FC<AssistantPageProps> = ({ onNavigateBookings
               </div>
               <CardDescription>Verify the extracted fields before submitting for administrative approval</CardDescription>
             </div>
-            <span className="text-xs font-mono font-semibold text-blue-700">
-              Confidence: {Math.round(extracted.confidence * 100)}%
-            </span>
+            <div className="flex items-center gap-2">
+              {extracted.reference_date && (
+                <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                  Ref Date: {extracted.reference_date}
+                </span>
+              )}
+              <span className="text-xs font-mono font-semibold text-blue-700">
+                Confidence: {Math.round(extracted.confidence * 100)}%
+              </span>
+            </div>
           </CardHeader>
 
           {/* Actionable Follow-up Questions Banner for Missing / Vague Fields */}
