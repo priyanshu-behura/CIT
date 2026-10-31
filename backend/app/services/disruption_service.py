@@ -130,9 +130,10 @@ class DisruptionService:
 
         if dis_res.get("status") == "infeasible":
             conn.close()
+            err_msg = dis_res.get("error") or "Rescheduling is infeasible under the current hard constraints."
             return {
                 "status": "infeasible",
-                "error": "Rescheduling is infeasible under the current hard constraints.",
+                "error": err_msg,
                 "disruption_id": disruption_id
             }
 

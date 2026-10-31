@@ -1,6 +1,19 @@
 import re
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+# Valid campus venues in CIT
+VALID_CAMPUS_ROOMS = {
+    "CR-101", "CR-102", "CR-103", "CR-104",
+    "CR-201", "CR-202", "CR-203", "CR-204",
+    "LH-1", "LH-2", "LH-3",
+    "SH-1", "SH-2",
+    "CS-LAB-1", "CS-LAB-2",
+    "ELEC-LAB-1", "ELEC-LAB-2",
+    "MECH-WS", "CIVIL-LAB",
+    "AUD", "OAT"
+}
 
 # Map common periods to times and vice-versa
 # Teaching: P1=08:00, P2=09:00, P3=10:00, P4=11:00, P5=12:00, P6=14:00, P7=15:00, P8=16:00, P9=17:00
@@ -62,27 +75,33 @@ class NLPBookingService:
         Parses English or Hinglish natural language booking prompts honestly:
         - When essential fields (date, time, attendance, venue) are missing or vague,
           flags them as 'needs input' and lists actionable follow-up questions.
-        - Relative day terms ('kal', 'aaj', 'parso', 'agle hafte') are NEVER silently
-          converted to fixed weekdays: they resolve against a clearly indicated reference date
-          and are explicitly marked as 'needs input' requiring user confirmation.
-        - Fixes room code number parsing (e.g. CR-101, SH-1, LH-2 are never parsed as attendance).
-        - User reviews and edits the resulting draft before submission; nothing is saved before submit.
+        - Relative day terms ('kal', 'aaj', 'parso', 'agle hafte') are evaluated using
+          Asia/Kolkata timezone with zoneinfo against an explicit reference date, marked 'needs input'.
+        - Multi-day series ('every Monday and Wednesday') preserves both days and queries recurrence.
+        - Unknown rooms ('Hall 999', 'Room 5000') trigger clear room-not-found messages with valid alternatives.
+        - Invalid times (< 08:00 or > 22:00) request a valid window and never silently default.
+        - Room codes (CR-101, SH-1, LH-2) are never parsed as attendance.
+        - User reviews and confirms the resulting draft in the UI before submission.
         """
-        from datetime import datetime, timedelta
-
         text_lower = text.lower()
         extracted_field_keys = set()
         missing_fields = []
         needs_input_fields = []
         follow_up_questions = []
 
+        try:
+            kolkata_tz = ZoneInfo("Asia/Kolkata")
+            now_kolkata = datetime.now(kolkata_tz)
+        except Exception:
+            now_kolkata = datetime.now()
+
         if not reference_date:
-            reference_date = datetime.now().strftime("%Y-%m-%d")
+            reference_date = now_kolkata.strftime("%Y-%m-%d")
 
         try:
             ref_dt = datetime.strptime(reference_date, "%Y-%m-%d")
         except Exception:
-            reference_date = "2026-11-01"
+            reference_date = now_kolkata.strftime("%Y-%m-%d")
             ref_dt = datetime.strptime(reference_date, "%Y-%m-%d")
 
         DAY_MAP_INDEX = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
@@ -109,26 +128,42 @@ class NLPBookingService:
         }
 
         # -------------------------------------------------------------
-        # 1. Day / Date Extraction (English & Hinglish)
+        # 1. Day / Date Extraction (English, Hinglish, Multi-day, Relative)
         # -------------------------------------------------------------
         day_found = False
+        requested_days = []
         for keyword, day_code in DAYS_ENGLISH_HINGLISH.items():
             if re.search(rf"\b{keyword}\b", text_lower):
-                extracted["day"] = day_code
-                extracted["extracted_fields"].append(f"Day: {day_code}")
-                extracted_field_keys.add("day")
-                day_found = True
-                break
+                if day_code not in requested_days:
+                    requested_days.append(day_code)
+
+        if len(requested_days) > 1:
+            extracted["days"] = requested_days
+            extracted["day"] = requested_days[0]
+            extracted["is_recurring"] = True
+            extracted["extracted_fields"].append(f"Days: {', '.join(requested_days)} (Multi-day series)")
+            needs_input_fields.append("recurring_days")
+            extracted["needs_input"] = True
+            follow_up_questions.append(
+                f"You requested multiple days ({', '.join(requested_days)}). Please confirm whether this should be created as a recurring booking series across all requested days or scheduled individually."
+            )
+            extracted_field_keys.add("day")
+            day_found = True
+        elif len(requested_days) == 1:
+            extracted["day"] = requested_days[0]
+            extracted["extracted_fields"].append(f"Day: {requested_days[0]}")
+            extracted_field_keys.add("day")
+            day_found = True
 
         if not day_found:
-            # Check for relative day terms: aaj, kal, parso, agle hafte
+            # Check for relative day terms: aaj, kal, parso, agle hafte (Asia/Kolkata reference date)
             if "aaj" in text_lower or re.search(r"\btoday\b", text_lower):
                 target_code = DAY_MAP_INDEX[ref_dt.weekday()]
                 if target_code == "SUN":
                     target_code = "MON"
                 extracted["day"] = target_code
                 extracted["is_relative_day"] = True
-                extracted["extracted_fields"].append(f"Day: {target_code} (from today/aaj, ref: {reference_date})")
+                extracted["extracted_fields"].append(f"Day: {target_code} (from today/aaj, ref: {reference_date} IST)")
                 needs_input_fields.append("day")
                 follow_up_questions.append(
                     f"Prompt mentioned 'aaj' (today). Based on reference date {reference_date} ({ref_dt.strftime('%A')}), this maps to {target_code}. Please confirm the academic day."
@@ -143,7 +178,7 @@ class NLPBookingService:
                     target_code = "MON"
                 extracted["day"] = target_code
                 extracted["is_relative_day"] = True
-                extracted["extracted_fields"].append(f"Day: {target_code} (from tomorrow/kal, ref: {reference_date})")
+                extracted["extracted_fields"].append(f"Day: {target_code} (from tomorrow/kal, ref: {reference_date} IST)")
                 needs_input_fields.append("day")
                 follow_up_questions.append(
                     f"Prompt mentioned 'kal' (tomorrow). Based on reference date {reference_date} ({ref_dt.strftime('%A')}), this maps to {target_code}. Please confirm this weekday in the form below."
@@ -158,7 +193,7 @@ class NLPBookingService:
                     target_code = "MON"
                 extracted["day"] = target_code
                 extracted["is_relative_day"] = True
-                extracted["extracted_fields"].append(f"Day: {target_code} (from parso/day after tomorrow, ref: {reference_date})")
+                extracted["extracted_fields"].append(f"Day: {target_code} (from parso/day after tomorrow, ref: {reference_date} IST)")
                 needs_input_fields.append("day")
                 follow_up_questions.append(
                     f"Prompt mentioned 'parso' (day after tomorrow). Based on reference date {reference_date} ({ref_dt.strftime('%A')}), this maps to {target_code}. Please confirm this weekday in the form below."
@@ -181,85 +216,121 @@ class NLPBookingService:
             follow_up_questions.append("Which day would you like to schedule this event? (e.g. Monday-Saturday / Somwar-Shaniwar)")
 
         # -------------------------------------------------------------
-        # 2. Time / Periods Extraction (English & Hinglish)
+        # 2. Time / Periods Extraction (English & Hinglish, Time Range, Operating Hours)
         # -------------------------------------------------------------
         time_found = False
-        # Patterns like: "2 pm to 5 pm", "14:00 to 17:00", "10 am to 1 pm", "6 to 8 pm"
-        time_match = re.search(r"(\d{1,2})\s*(am|pm)?\s*(?:to|-|se|till)\s*(\d{1,2})\s*(am|pm)", text_lower)
-        if time_match:
-            start_hr = int(time_match.group(1))
-            start_mer = time_match.group(2)
-            end_hr = int(time_match.group(3))
-            end_mer = time_match.group(4)
+        has_subah = "subah" in text_lower or "morning" in text_lower
+        has_dopehar = "dopehar" in text_lower or "afternoon" in text_lower or "after lunch" in text_lower
+        has_shaam = "shaam" in text_lower or "evening" in text_lower or "raat" in text_lower or "night" in text_lower
 
-            # If start meridian missing but end meridian is PM and start < end, infer PM
-            if not start_mer and end_mer == "pm" and start_hr < end_hr and start_hr >= 1:
-                start_mer = "pm"
-            elif not start_mer and end_mer == "am":
-                start_mer = "am"
+        # Pattern 1: Range like "10 se 1 baje", "10 am to 1 pm", "2 pm to 5 pm", "6 to 8 pm", "2 se 4 baje"
+        range_match = re.search(
+            r"(\d{1,2})\s*(am|pm|baje)?\s*(?:to|-|se|till)\s*(\d{1,2})\s*(am|pm|baje)?",
+            text_lower
+        )
+        if range_match:
+            start_hr = int(range_match.group(1))
+            start_mer = range_match.group(2)
+            end_hr = int(range_match.group(3))
+            end_mer = range_match.group(4)
 
-            # Convert 12h to 24h
-            if start_mer == "pm" and start_hr < 12:
-                start_hr += 12
-            elif start_mer == "am" and start_hr == 12:
-                start_hr = 0
-            if end_mer == "pm" and end_hr < 12:
-                end_hr += 12
-            elif end_mer == "am" and end_hr == 12:
-                end_hr = 0
-
-            sp = PERIOD_MAP.get(start_hr, 6)
-            ep = PERIOD_MAP.get(end_hr - 1, sp + 2)
-            extracted["start_period"] = sp
-            extracted["end_period"] = max(sp, ep)
-            extracted["extracted_fields"].append(f"Time: {start_hr}:00 to {end_hr}:00 (P{sp}-P{ep})")
-            extracted_field_keys.add("time")
-            time_found = True
-        else:
-            # Pattern like "at 10 am", "at 9 am"
-            at_match = re.search(r"\b(?:at|@)\s*(\d{1,2})\s*(am|pm)\b", text_lower)
-            if at_match:
-                start_hr = int(at_match.group(1))
-                mer = at_match.group(2)
-                if mer == "pm" and start_hr < 12:
+            # Apply morning / afternoon / evening hints
+            if has_subah:
+                if start_hr <= 12 and not start_mer:
+                    start_mer = "am"
+                if end_hr < start_hr:
+                    end_hr += 12  # e.g. 10 se 1 baje -> 10:00 to 13:00 (P3 to P5)
+                elif end_hr <= 12 and not end_mer:
+                    end_mer = "am"
+            elif has_dopehar:
+                if start_hr < 12:
                     start_hr += 12
-                elif mer == "am" and start_hr == 12:
+                if end_hr <= 12:
+                    end_hr += 12
+            elif has_shaam:
+                if start_hr < 12:
+                    start_hr += 12
+                if end_hr <= 12:
+                    end_hr += 12
+            else:
+                if not start_mer and end_mer == "pm" and start_hr < end_hr:
+                    start_mer = "pm"
+                elif not start_mer and end_mer == "am":
+                    start_mer = "am"
+
+                if start_mer == "pm" and start_hr < 12:
+                    start_hr += 12
+                elif start_mer == "am" and start_hr == 12:
                     start_hr = 0
-                sp = PERIOD_MAP.get(start_hr, 6)
-                extracted["start_period"] = sp
-                extracted["end_period"] = min(13, sp + 1)
-                extracted["extracted_fields"].append(f"Time: {start_hr}:00 (P{sp})")
-                extracted_field_keys.add("time")
+
+                if end_mer == "pm" and end_hr < 12:
+                    end_hr += 12
+                elif end_mer == "am" and end_hr == 12:
+                    end_hr = 0
+
+            # Check operating hours (08:00 to 22:00)
+            if start_hr < 8 or end_hr > 22 or (start_hr == end_hr):
+                extracted["start_period"] = None
+                extracted["end_period"] = None
+                extracted["invalid_time_requested"] = f"{start_hr}:00 to {end_hr}:00"
+                needs_input_fields.append("time")
+                extracted["needs_input"] = True
+                follow_up_questions.append(
+                    f"Requested time ({start_hr:02d}:00 to {end_hr:02d}:00) is outside valid campus operating hours (08:00 to 22:00). Teaching periods run 08:00–18:00 (P1–P9) and evening events run 18:00–22:00 (P10–P13). Please select a valid time window."
+                )
                 time_found = True
             else:
-                # Hinglish: "6 baje, 2 ghante" or "6 baje se 8 baje"
-                baje_match = re.search(r"(\d{1,2})\s*baje", text_lower)
-                ghante_match = re.search(r"(\d{1,2})\s*ghante", text_lower)
-                if baje_match:
-                    start_hr = int(baje_match.group(1))
-                    if ("shaam" in text_lower or "raat" in text_lower) and start_hr < 12:
-                        start_hr += 12
-                    dur = int(ghante_match.group(1)) if ghante_match else 2
-                    sp = PERIOD_MAP.get(start_hr, 10 if start_hr >= 18 else 6)
-                    ep = min(13, sp + dur - 1)
+                sp = PERIOD_MAP.get(start_hr, 3 if start_hr <= 10 else (6 if start_hr <= 14 else 10))
+                ep = PERIOD_MAP.get(end_hr - 1, sp + 2)
+                extracted["start_period"] = sp
+                extracted["end_period"] = max(sp, ep)
+                extracted["extracted_fields"].append(f"Time: {start_hr:02d}:00 to {end_hr:02d}:00 (P{sp}-P{ep})")
+                extracted_field_keys.add("time")
+                time_found = True
+        else:
+            # Pattern 2: Single time mention, e.g. "at 10 am", "at 3 am", "7 baje"
+            single_match = re.search(r"\b(?:at|@)?\s*(\d{1,2})\s*(am|pm|baje)\b", text_lower)
+            if single_match:
+                start_hr = int(single_match.group(1))
+                unit = single_match.group(2)
+                if (unit == "pm" or has_shaam) and start_hr < 12:
+                    start_hr += 12
+                elif unit == "am" and start_hr == 12:
+                    start_hr = 0
+
+                # Check operating hours
+                if start_hr < 8 or start_hr > 22:
+                    extracted["start_period"] = None
+                    extracted["end_period"] = None
+                    extracted["invalid_time_requested"] = f"{start_hr}:00"
+                    needs_input_fields.append("time")
+                    extracted["needs_input"] = True
+                    follow_up_questions.append(
+                        f"Requested time ({start_hr:02d}:00) is outside valid campus operating hours (08:00 to 22:00). Please choose a time between 08:00 and 22:00."
+                    )
+                    time_found = True
+                else:
+                    sp = PERIOD_MAP.get(start_hr, 6)
                     extracted["start_period"] = sp
-                    extracted["end_period"] = max(sp, ep)
-                    extracted["extracted_fields"].append(f"Time: {start_hr}:00 ({dur}h, P{sp}-P{ep})")
+                    extracted["end_period"] = min(13, sp + 1)
+                    extracted["extracted_fields"].append(f"Time: {start_hr:02d}:00 (P{sp})")
                     extracted_field_keys.add("time")
                     time_found = True
-                elif "morning" in text_lower or "subah" in text_lower:
+            else:
+                # Descriptive time hints
+                if has_subah:
                     extracted["start_period"] = 2
                     extracted["end_period"] = 4
                     extracted["extracted_fields"].append("Time: Morning (P2-P4)")
                     extracted_field_keys.add("time")
                     time_found = True
-                elif "after lunch" in text_lower or "dopehar" in text_lower:
+                elif has_dopehar:
                     extracted["start_period"] = 6
                     extracted["end_period"] = 8
                     extracted["extracted_fields"].append("Time: Afternoon after lunch (P6-P8)")
                     extracted_field_keys.add("time")
                     time_found = True
-                elif "evening" in text_lower or "shaam" in text_lower or "night" in text_lower or "raat" in text_lower:
+                elif has_shaam:
                     extracted["start_period"] = 10
                     extracted["end_period"] = 12
                     extracted["extracted_fields"].append("Time: Evening (P10-P12)")
@@ -327,30 +398,47 @@ class NLPBookingService:
             follow_up_questions.append("Approximately how many attendees or students will attend?")
 
         # -------------------------------------------------------------
-        # 4. Room Type & Preferred Room
+        # 4. Room Type & Preferred Room (With Unknown Room Detection)
         # -------------------------------------------------------------
         venue_found = False
-        # Direct room code match (e.g. "SH-2", "CR-101", "AUD", "OAT")
-        room_code_match = re.search(r"\b(cr-\d{3}|lh-\d|sh-\d|cs-lab-\d|elec-lab-\d|mech-ws|civil-lab|aud|oat)\b", text_lower)
-        if room_code_match:
-            code_upper = room_code_match.group(1).upper()
-            extracted["preferred_room_id"] = code_upper
-            # Map code to room type
-            if "CR-" in code_upper:
-                extracted["room_types"] = ["classroom"]
-            elif "LH-" in code_upper:
-                extracted["room_types"] = ["lecture_hall"]
-            elif "SH-" in code_upper:
-                extracted["room_types"] = ["seminar_hall"]
-            elif "CS-LAB" in code_upper:
-                extracted["room_types"] = ["lab_cs"]
-            elif "AUD" in code_upper:
-                extracted["room_types"] = ["auditorium"]
-            elif "OAT" in code_upper:
-                extracted["room_types"] = ["outdoor"]
-            extracted["extracted_fields"].append(f"Room: {code_upper}")
-            extracted_field_keys.add("venue")
-            venue_found = True
+
+        # First, detect explicitly requested unknown rooms (e.g. Hall 999, Room 5000, CR-999)
+        unknown_match = re.search(r"\b(hall\s+\d+|room\s+\d+|cr-\d{3,4}|lh-\d{2,4}|sh-\d{2,4})\b", text_lower)
+        if unknown_match:
+            candidate_room = unknown_match.group(1).upper()
+            normalized_candidate = candidate_room.replace(" ", "-")
+            if candidate_room not in VALID_CAMPUS_ROOMS and normalized_candidate not in VALID_CAMPUS_ROOMS:
+                extracted["preferred_room_id"] = None
+                extracted["unknown_room_requested"] = candidate_room
+                needs_input_fields.append("venue")
+                extracted["needs_input"] = True
+                follow_up_questions.append(
+                    f"Requested venue '{candidate_room.title()}' does not exist on CIT campus. Available venues include: Seminar Halls (SH-1, SH-2), Lecture Halls (LH-1 to LH-3), Classrooms (CR-101 to CR-204), CS Labs (CS-LAB-1, CS-LAB-2). Please select a valid venue."
+                )
+                venue_found = True
+
+        if not venue_found:
+            # Direct room code match (e.g. "SH-2", "CR-101", "AUD", "OAT")
+            room_code_match = re.search(r"\b(cr-\d{3}|lh-\d|sh-\d|cs-lab-\d|elec-lab-\d|mech-ws|civil-lab|aud|oat)\b", text_lower)
+            if room_code_match:
+                code_upper = room_code_match.group(1).upper()
+                extracted["preferred_room_id"] = code_upper
+                # Map code to room type
+                if "CR-" in code_upper:
+                    extracted["room_types"] = ["classroom"]
+                elif "LH-" in code_upper:
+                    extracted["room_types"] = ["lecture_hall"]
+                elif "SH-" in code_upper:
+                    extracted["room_types"] = ["seminar_hall"]
+                elif "CS-LAB" in code_upper:
+                    extracted["room_types"] = ["lab_cs"]
+                elif "AUD" in code_upper:
+                    extracted["room_types"] = ["auditorium"]
+                elif "OAT" in code_upper:
+                    extracted["room_types"] = ["outdoor"]
+                extracted["extracted_fields"].append(f"Room: {code_upper}")
+                extracted_field_keys.add("venue")
+                venue_found = True
 
         if not venue_found:
             for kw, (rtype, pref_id) in ROOM_TYPE_KEYWORDS.items():
@@ -384,11 +472,16 @@ class NLPBookingService:
                 extracted["extracted_fields"].append(f"Category: {cat}")
                 break
 
-        # Custom title from text if "for <event>" or "<event> ke liye"
-        for_match = re.search(r"(?:for|liye)\s+([a-zA-Z\s]{4,30})(?:on|from|in|with|$)", text_lower)
-        if for_match:
-            candidate = for_match.group(1).strip().title()
-            if candidate and len(candidate) > 4:
+        # Check for explicitly quoted or titled topics
+        title_match = re.search(r"(?:for|title|named|called)\s+[\"']([^\"']+)[\"']", text_lower)
+        if title_match:
+            extracted["title"] = title_match.group(1).title()
+            extracted["extracted_fields"].append(f"Title: {extracted['title']}")
+        else:
+            # Check for workshop / event names
+            event_match = re.search(r"for\s+([a-zA-Z\s]{3,25})\s+(?:workshop|event|meeting|fest|lecture|bootcamp)", text_lower)
+            if event_match:
+                candidate = f"{event_match.group(1).strip().title()} {event_match.group(0).split()[-1].title()}"
                 extracted["title"] = candidate
                 extracted["extracted_fields"].append(f"Title: {candidate}")
 
@@ -398,15 +491,15 @@ class NLPBookingService:
         needs = []
         if any(w in text_lower for w in ["projector", "screen"]):
             needs.append("projector")
-        if any(w in text_lower for w in ["ac", "air condition", "cool"]):
+        if any(w in text_lower for w in ["ac", "air condition", "air conditioned"]):
             needs.append("ac")
-        if any(w in text_lower for w in ["mic", "pa", "sound", "speaker"]):
+        if any(w in text_lower for w in ["mic", "pa", "sound", "speaker", "sound system"]):
             needs.append("pa_system")
         if any(w in text_lower for w in ["computer", "pc", "system", "lab with computers"]):
             needs.append("computers")
         if any(w in text_lower for w in ["wheelchair", "accessible", "ramps"]):
             extracted["needs_accessible"] = True
-            extracted["extracted_fields"].append("Accessible: True")
+            extracted["extracted_fields"].append("Accessibility: Wheelchair accessible")
 
         if needs:
             extracted["needs"] = needs
@@ -425,3 +518,4 @@ class NLPBookingService:
 
 
 nlp_booking_service = NLPBookingService()
+

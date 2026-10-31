@@ -45,12 +45,13 @@ python validator.py --data "CrunchWeek_StarterPack (1)/CrunchWeek_StarterPack/da
 ```
 Dataset: cit-public-v1   Schedule says: cit-public-v1   Team: Tech Zephyr 4.0
 Hard violations: 0  {}
-Soft penalty: 221  {'S1': 0, 'S2': 116, 'S3': 21, 'S4': 84, 'S5': 0, 'S6': 0}
-Bookings: score 64.5 | approved 21, alternatives 2, rejected 2, session overrides 0, priority inversions 0
+Soft penalty: 232  {'S1': 0, 'S2': 133, 'S3': 12, 'S4': 87, 'S5': 0, 'S6': 0}
+Bookings: score 63.0 | approved 20, alternatives 3, rejected 2, session overrides 0, priority inversions 0
 Exam soft penalty: 0
 ```
 - **Hard Violations:** **0** (H1–H14 satisfied 100%)
-- **Booking Score:** **64.5 / 70.0** (21 Approved, 2 Alternatives, 2 Rejected, 0 Inversions)
+- **Soft Penalty:** **232**
+- **Booking Score:** **63.0 / 70.0** (20 Approved, 3 Alternatives, 2 Rejected, 0 Inversions)
 - **Exam Soft Penalty:** **0** (All exam constraints satisfied)
 
 ### 2. Disruption Schedule (`exports/schedule_after.json`)
@@ -60,14 +61,28 @@ python validator.py --data "CrunchWeek_StarterPack (1)/CrunchWeek_StarterPack/da
 ```
 Dataset: cit-public-v1   Schedule says: cit-public-v1   Team: Tech Zephyr 4.0
 Hard violations: 0  {}
-Soft penalty: 232  {'S1': 2, 'S2': 119, 'S3': 21, 'S4': 84, 'S5': 4, 'S6': 2}
-Bookings: score 64.5 | approved 21, alternatives 2, rejected 2, session overrides 0, priority inversions 0
+Soft penalty: 238  {'S1': 2, 'S2': 133, 'S3': 12, 'S4': 87, 'S5': 3, 'S6': 1}
+Bookings: score 63.0 | approved 20, alternatives 3, rejected 2, session overrides 0, priority inversions 0
 Exam soft penalty: 0
-Stability: 13 sessions moved (1 changed time, 12 room only)
+Stability: 8 sessions moved (2 changed time, 6 room only)
 ```
 - **Hard Violations:** **0**
-- **Disruption Recovery:** Minimal movement penalty achieved (only 1 session changed time; 12 sessions reallocated rooms).
+- **Disruption Recovery:** Minimal movement penalty achieved (only 2 sessions changed time; 6 sessions reallocated rooms).
+- **Stability:** Exactly 8 sessions displaced.
 - **Priority Inversions:** **0**
+
+### 3. Fresh Generation Variation Notice
+- **Observed Range Across Fresh Generation Runs:** Soft penalties of **217 to 258** observed across independent solves (all with **0 hard violations**).
+- **Explanation:** CP-SAT utilizes 8 parallel worker threads (`num_search_workers = 8`). Due to asynchronous multi-threaded search heuristics (LNS, SAT conflict learning) discovering equivalent internal optima in slightly different orders, unmodeled soft metrics (such as student idle gap distribution $S_2$) exhibit natural variation between 217 and 258, while hard constraints remain 100% satisfied.
+
+---
+
+## Known Platform Limitations & Deployment Architecture
+
+1. **Single-Worker Execution Requirement**: In-memory job state and the concurrency thread lock (`GENERATION_LOCK`) are process-local. Run backend deployments with a single worker process (`uvicorn app.main:app --workers 1`). Multi-worker deployments require an external queue (Celery/Redis) to share background job states across worker processes.
+2. **Deterministic Solver Integrity**: The AI Assistant and NLP Parser operate strictly as advisory draft generators. The LLM is **never** permitted to decide timetable assignments, hard constraint satisfaction, room validity, or booking approvals; all scheduling decisions are proven deterministically by Google OR-Tools CP-SAT and verified by `validator.py`.
+3. **Disruption Upload**: Disruption scenarios are executed via API or pre-configured scenarios; a direct drag-and-drop custom disruption JSON file upload UI is pending future expansion.
+4. **Data Mutability**: Demo data reset to initial seed state is performed via database re-seeding script; automatic one-click admin UI reset is pending.
 
 ---
 

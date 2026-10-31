@@ -24,17 +24,18 @@ This document records how AI tools and agentic assistants were leveraged during 
 - All dataset metrics (27 rooms, 40 faculty, 14 student groups, 62 courses, 189 sessions, 243 teaching hours, 25 booking requests, 41 midsem exams) are loaded dynamically from source files.
 - No dummy, fabricated, or hardcoded statistics were introduced into API responses.
 
-### 2. Deterministic Constraint Formulation
-- Timetable and exam scheduling are mathematically modeled using **Google OR-Tools CP-SAT**:
-  - Hard constraints H1–H14: Room capacity, non-overlapping sessions, faculty daily limits ($\le 4\text{ hours}$), lab session fixed timings (P2 or P6), mandatory lunch break (after P5), and elective basket synchronization.
-  - Soft penalties S1–S6: Room change penalties, faculty preferences, and department locality.
-  - Exam capacity halving: Enforced $\lfloor \text{Capacity} / 2 \rfloor$ per venue with zero group clashes.
-- All solver outputs were independently verified against the official `validator.py` script.
+### 2. Deterministic vs Rule-Based AI Boundaries (What LLMs Are NOT Allowed to Decide)
+- **Rule-Based Parser & Assistant**: The in-app NLP Booking Assistant and Chat Query system operate strictly as **rule-based, deterministic extractors and grounded retrievers** (utilizing compiled regular expressions, keyword/alias mappings, timezone-aware date arithmetic via `zoneinfo`, and dataset queries).
+- **Absolute Solver Boundaries**: Under institutional governance, an LLM is **strictly prohibited from deciding**:
+  1. **Timetable Session Assignments**: The LLM does not assign slots, days, or rooms to sessions.
+  2. **Feasibility or Constraint Satisfaction**: The LLM never decides whether a schedule or disruption is feasible.
+  3. **Booking Decisions**: The LLM does not approve, reject, or prioritize venue booking requests; human role-based authorization (Admin / Coordinator) is required.
+  4. **Constraint Modification**: The LLM cannot alter, weaken, or bypass hard constraints (H1–H14) or soft penalty weights (S1–S6).
+- All combinatorial timetable optimization is performed strictly by **Google OR-Tools CP-SAT**, and all compliance evaluation is independently executed by the official deterministic **`validator.py`**.
 
-### 3. Security & Institutional Governance
-- Implemented PBKDF2-HMAC-SHA256 password hashing with salt and PyJWT HS256 authentication tokens.
-- Enforced strict institutional rules: **Users cannot approve their own booking requests** (returns HTTP 403 and records an audit log entry).
-- Role-based route protection across all 4 personas (Admin, Coordinator, Faculty, Club Rep).
+### 3. AI Development Tools
+- **AI Coding Assistant**: Google DeepMind Antigravity Agent (Gemini 3.8 Flash) was utilized for pair programming, test generation, and documentation drafting under strict human verification and audit gates.
+- **Third-Party AI Services**: No proprietary third-party commercial LLM endpoints (OpenAI, Anthropic) are integrated in the production solver pipeline to maintain zero external network dependency and complete offline determinism.
 
 ---
 
