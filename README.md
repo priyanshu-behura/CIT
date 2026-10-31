@@ -151,6 +151,12 @@ Stability: 8 sessions moved (2 changed time, 6 room only)
   - `cit_timetable.csv` (Tabular format for academic administration).
 - In-browser execution of `validator.py` with real-time terminal stdout and score display.
 
+### 11. Transactional Admin Demo Reset (`POST /api/v1/admin/reset`)
+- **Baseline Snapshot Restoration:** Restores the platform state back to the original validated baseline snapshot from `exports/schedule.json` (0 hard violations, soft penalty 232).
+- **Official Booking Requests Re-seeding:** Restores all 25 official Spectra Week requests from `cit_public.json` with accurate statuses (BR-04 cancelled, BR-05a–e, BR-11a–b).
+- **Audit & Simulation Cleanup:** Atomically clears demo-created disruptions, decisions, notifications, and temporary solver runs while preserving registered user accounts.
+- **Dynamic Solver Flexibility:** Judges and administrators can generate fresh timetables through the application after reset; fresh generation may produce slight variations in soft penalty scores due to OR-Tools multi-threaded parallel search while strictly satisfying 100% of hard constraints.
+
 ---
 
 ## Premium Light Design System

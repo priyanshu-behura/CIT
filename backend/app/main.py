@@ -15,6 +15,7 @@ from app.api.analytics import router as analytics_router
 from app.api.chat import router as chat_router
 from app.api.export import router as export_router
 from app.api.notifications import router as notifications_router
+from app.api.admin import router as admin_router
 
 
 @asynccontextmanager
@@ -71,6 +72,9 @@ app.include_router(export_router, prefix=settings.API_V1_STR)
 
 # Notifications endpoints
 app.include_router(notifications_router, prefix=settings.API_V1_STR)
+
+# Admin endpoints
+app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

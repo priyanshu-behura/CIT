@@ -178,4 +178,8 @@ export const api = {
   },
   markNotificationRead: (id: number): Promise<any> =>
     fetchJson(`/api/v1/notifications/${id}/read`, { method: 'POST' }),
+
+  // Admin Operations
+  resetDemoData: (): Promise<{ status: string; message: string; baseline_restored: any; official_bookings_count: number }> =>
+    fetchJson('/api/v1/admin/reset', { method: 'POST' }),
 };
