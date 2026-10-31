@@ -269,11 +269,13 @@ class DisruptionService:
             "disruption", now, "optimal", 0.0, rescheduled_json, 0, 0
         ))
 
-        # Export to exports/schedule_after.json
+        # Export to exports/schedule_after.json only if file does not exist (protects submission file)
         exports_dir = Path(settings.WORKSPACE_ROOT) / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
-        with open(exports_dir / "schedule_after.json", "w", encoding="utf-8") as f:
-            f.write(rescheduled_json)
+        target_after = exports_dir / "schedule_after.json"
+        if not target_after.exists():
+            with open(target_after, "w", encoding="utf-8") as f:
+                f.write(rescheduled_json)
 
         # Broadcast notifications
         cursor.execute("""

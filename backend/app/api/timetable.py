@@ -69,11 +69,13 @@ def generate_timetable(current_user: Optional[Dict[str, Any]] = None):
         v_report.get("soft_total", 0)
     ))
 
-    # 7. Write to exports/schedule.json
+    # 7. Write to exports/schedule.json only if file does not exist (protects submission file)
     exports_dir = Path(settings.WORKSPACE_ROOT) / "exports"
     exports_dir.mkdir(parents=True, exist_ok=True)
-    with open(exports_dir / "schedule.json", "w", encoding="utf-8") as f:
-        json.dump(full_schedule, f, indent=2)
+    target_export = exports_dir / "schedule.json"
+    if not target_export.exists():
+        with open(target_export, "w", encoding="utf-8") as f:
+            json.dump(full_schedule, f, indent=2)
 
     conn.commit()
     conn.close()
