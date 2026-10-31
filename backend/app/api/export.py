@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from app.core.config import settings
 from app.core.database import get_db_connection
 
@@ -10,49 +10,62 @@ router = APIRouter(prefix="/export", tags=["Reports & Official Exports"])
 
 @router.get("/schedule.json")
 def export_baseline_schedule():
-    """Download official baseline schedule.json matching the exact validator schema."""
+    """
+    Download current baseline schedule matching the exact validator schema.
+    Serves the latest active baseline schedule from the SQLite database dynamically.
+    Falls back to exports/schedule.json if database has not recorded a run yet.
+    Protects committed submission exports on disk from runtime mutation.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT schedule_json FROM schedules WHERE schedule_type = 'baseline' ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+
+    if row and row["schedule_json"]:
+        return Response(
+            content=row["schedule_json"],
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=schedule.json"}
+        )
+
+    # Fallback to repository committed export if DB record absent
     exports_dir = Path(settings.WORKSPACE_ROOT) / "exports"
     file_path = exports_dir / "schedule.json"
+    if file_path.exists():
+        return FileResponse(path=str(file_path), media_type="application/json", filename="schedule.json")
 
-    if not file_path.exists():
-        # Check database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT schedule_json FROM schedules WHERE schedule_type = 'baseline' ORDER BY id DESC LIMIT 1")
-        row = cursor.fetchone()
-        conn.close()
-
-        if row:
-            exports_dir.mkdir(parents=True, exist_ok=True)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(row["schedule_json"])
-        else:
-            raise HTTPException(status_code=404, detail="schedule.json has not been generated yet. Please click 'Generate Timetable' first.")
-
-    return FileResponse(path=str(file_path), media_type="application/json", filename="schedule.json")
+    raise HTTPException(status_code=404, detail="schedule.json has not been generated yet. Please click 'Generate Timetable' first.")
 
 
 @router.get("/schedule_after.json")
 def export_disrupted_schedule():
-    """Download official disrupted schedule_after.json matching the exact validator schema."""
+    """
+    Download current disrupted schedule matching the exact validator schema.
+    Serves the latest committed disruption schedule from SQLite dynamically.
+    Falls back to exports/schedule_after.json if database record absent.
+    Protects committed submission exports on disk from runtime mutation.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT schedule_json FROM schedules WHERE schedule_type = 'disruption' ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+
+    if row and row["schedule_json"]:
+        return Response(
+            content=row["schedule_json"],
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=schedule_after.json"}
+        )
+
     exports_dir = Path(settings.WORKSPACE_ROOT) / "exports"
     file_path = exports_dir / "schedule_after.json"
+    if file_path.exists():
+        return FileResponse(path=str(file_path), media_type="application/json", filename="schedule_after.json")
 
-    if not file_path.exists():
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT schedule_json FROM schedules WHERE schedule_type = 'disruption' ORDER BY id DESC LIMIT 1")
-        row = cursor.fetchone()
-        conn.close()
+    raise HTTPException(status_code=404, detail="schedule_after.json has not been approved yet. Run disruption simulation and click 'Approve & Commit' first.")
 
-        if row:
-            exports_dir.mkdir(parents=True, exist_ok=True)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(row["schedule_json"])
-        else:
-            raise HTTPException(status_code=404, detail="schedule_after.json has not been approved yet. Run disruption simulation and click 'Approve & Commit' first.")
-
-    return FileResponse(path=str(file_path), media_type="application/json", filename="schedule_after.json")
 
 
 @router.get("/timetable.csv")
