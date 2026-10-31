@@ -1,0 +1,39 @@
+# Python & Virtual Environments
+venv/
+.venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+*.local
+
+# Environment variables
+.env
+*.env
+
+# SQLite Database & Storage
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Accidental / Unused directories
+next-app/
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
