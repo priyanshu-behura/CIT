@@ -37,3 +37,6 @@ next-app/
 .DS_Store
 Thumbs.db
 
+
+# local audit scripts and screenshots
+audit/
