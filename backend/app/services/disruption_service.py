@@ -2,9 +2,11 @@ import json
 import copy
 from pathlib import Path
 from datetime import datetime, timezone
+from collections import defaultdict
 from typing import Dict, Any, List, Optional
 from app.core.database import get_db_connection
 from app.services.scheduler_service import SchedulerService
+from app.services.infeasibility_diagnostics import diagnose_session_infeasibility
 from app.core.config import settings
 
 # Import helper from validator
@@ -148,10 +150,64 @@ class DisruptionService:
         if dis_res.get("status") == "infeasible":
             conn.close()
             err_msg = dis_res.get("error") or "Rescheduling is infeasible under the current hard constraints."
+
+            # Perform deterministic candidate elimination diagnostics for all affected sessions
+            # Prioritize sessions directly altered or added in the disruption changes
+            changed_session_ids = set()
+            for ch in changes:
+                if ch.get("type") == "add_session" and "session" in ch:
+                    changed_session_ids.add(ch["session"]["id"])
+                elif ch.get("type") == "faculty_unavailable":
+                    fac_id = ch.get("faculty_id")
+                    for s in disrupted_data.get("sessions", []):
+                        if s["faculty_id"] == fac_id:
+                            changed_session_ids.add(s["id"])
+                elif ch.get("type") == "room_unavailable":
+                    r_id = ch.get("room_id")
+                    for sid, (bd, bsp, brid) in baseline_assign.items():
+                        if brid == r_id:
+                            changed_session_ids.add(sid)
+
+            diagnostics = []
+            # Check changed sessions first, then others
+            ordered_sessions = sorted(
+                disrupted_data.get("sessions", []),
+                key=lambda s: 0 if s["id"] in changed_session_ids else 1
+            )
+
+            for s in ordered_sessions:
+                diag = diagnose_session_infeasibility(
+                    session=s,
+                    data=disrupted_data,
+                    baseline_assign=baseline_assign
+                )
+                if diag["dominant_blocking_constraints"]:
+                    diagnostics.append(diag)
+
+            # Summarize top affected sessions and overall dominant constraints
+            affected_sids = [d["session_id"] for d in diagnostics]
+            agg_counts = defaultdict(int)
+            for d in diagnostics:
+                for k, v in d["candidate_eliminations"].items():
+                    agg_counts[k] += v
+
+            sorted_agg = sorted(agg_counts.items(), key=lambda x: x[1], reverse=True)
+            top_blocking = [c[0] for c in sorted_agg[:3]]
+
+            primary_diag = diagnostics[0] if diagnostics else None
+            primary_explanation = primary_diag["explanation"] if primary_diag else "No valid slot remains under the applied hard constraints."
+
             return {
                 "status": "infeasible",
                 "error": err_msg,
-                "disruption_id": disruption_id
+                "disruption_id": disruption_id,
+                "affected_sessions": affected_sids[:5],
+                "dominant_blocking_constraints": top_blocking,
+                "candidate_elimination_counts": dict(agg_counts),
+                "primary_explanation": primary_explanation,
+                "diagnostics": diagnostics[:5],
+                "schedule_applied": False,
+                "baseline_untouched": True
             }
 
         # Solve bookings under new timetable

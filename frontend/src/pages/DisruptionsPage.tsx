@@ -252,8 +252,68 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
         </div>
       </Card>
 
-      {/* Simulation Results & Diff View */}
-      {simulationResult && (
+      {/* Infeasible Simulation Diagnostic Alert */}
+      {simulationResult && simulationResult.status === 'infeasible' && (
+        <div className="p-6 rounded-2xl bg-amber-50/80 border border-amber-300 shadow-sm space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 shrink-0 mt-0.5">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-amber-950">Disruption Rescheduling Infeasible</h3>
+                <Badge variant="warning">No Feasible Solution</Badge>
+              </div>
+              <p className="text-xs text-amber-900 font-medium">
+                {simulationResult.primary_explanation || simulationResult.error}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                Dominant Blocking Constraints
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {simulationResult.dominant_blocking_constraints?.map((c: string) => (
+                  <span key={c} className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-mono text-[11px] font-semibold">
+                    {c.replace(/_/g, ' ')}
+                  </span>
+                )) || <span className="text-slate-400">None detected</span>}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                Safeguards & Active Schedule Status
+              </span>
+              <p className="text-[11px] text-slate-600">
+                <span className="font-bold text-emerald-700">&#10003; Baseline schedule untouched:</span> No partial changes committed to active timetable or disk exports.
+              </p>
+            </div>
+          </div>
+
+          {simulationResult.candidate_elimination_counts && (
+            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                Deterministic Constraint-Elimination Breakdown (Evaluated Candidate Slots)
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-[11px] font-mono">
+                {Object.entries(simulationResult.candidate_elimination_counts).map(([k, v]) => (
+                  <div key={k} className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <span className="text-slate-600 truncate pr-1">{k.replace(/_/g, ' ')}</span>
+                    <span className="font-bold text-amber-700">{v as number}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Simulation Results & Diff View (Feasible) */}
+      {simulationResult && simulationResult.status !== 'infeasible' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Stability Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
