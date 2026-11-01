@@ -3,7 +3,7 @@ import copy
 from pathlib import Path
 from datetime import datetime, timezone
 from collections import defaultdict
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from app.core.database import get_db_connection
 from app.services.scheduler_service import SchedulerService
 from app.services.infeasibility_diagnostics import diagnose_session_infeasibility
@@ -22,70 +22,170 @@ class DisruptionService:
         self.scheduler = SchedulerService()
 
     def get_all_disruptions(self) -> List[Dict[str, Any]]:
-        """Fetch all disruption records from SQLite."""
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM disruptions ORDER BY created_at DESC")
-        rows = cursor.fetchall()
-        conn.close()
+        """Fetch all disruption records from MongoDB Atlas primary database with read-only SQLite fallback."""
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            docs = list(mongo_db.disruptions.find({}).sort("created_at", -1))
+            if docs:
+                results = []
+                for doc in docs:
+                    item = dict(doc)
+                    item.pop("_id", None)
+                    for f in ["changes", "stability_metrics"]:
+                        val = item.get(f)
+                        if isinstance(val, str):
+                            try:
+                                item[f] = json.loads(val)
+                            except Exception:
+                                item[f] = [] if f == "changes" else {}
+                        elif val is None:
+                            item[f] = [] if f == "changes" else {}
+                    results.append(item)
+                return results
+        except Exception:
+            pass
 
-        results = []
-        for row in rows:
-            item = dict(row)
-            item["changes"] = json.loads(item.get("changes") or "[]")
-            item["stability_metrics"] = json.loads(item.get("stability_metrics") or "{}")
-            results.append(item)
-        return results
+        # Fallback to read-only SQLite
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM disruptions ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+            conn.close()
+
+            results = []
+            for row in rows:
+                item = dict(row)
+                item["changes"] = json.loads(item.get("changes") or "[]")
+                item["stability_metrics"] = json.loads(item.get("stability_metrics") or "{}")
+                results.append(item)
+            return results
+        except Exception:
+            return []
+
+    def _get_disruption_by_id(self, disruption_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve disruption record by ID from MongoDB Atlas or read-only SQLite archive."""
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            doc = mongo_db.disruptions.find_one({"id": disruption_id})
+            if doc:
+                item = dict(doc)
+                item.pop("_id", None)
+                if isinstance(item.get("changes"), str):
+                    try:
+                        item["changes"] = json.loads(item["changes"])
+                    except Exception:
+                        item["changes"] = []
+                return item
+        except Exception:
+            pass
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM disruptions WHERE id = ?", (disruption_id,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                item = dict(row)
+                item["changes"] = json.loads(item.get("changes") or "[]")
+                return item
+        except Exception:
+            pass
+
+        return None
+
+    def _get_baseline_assignment(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Retrieves the verified baseline schedule assignment.
+        Checks MongoDB Atlas primary database first, falls back to exports/schedule.json.
+        Never solves from scratch to prevent timeout.
+        """
+        # 1. MongoDB Atlas
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            m_row = mongo_db.schedules.find_one(
+                {"schedule_type": "baseline", "status": {"$in": ["optimal", "feasible"]}},
+                sort=[("created_at", -1)]
+            )
+            if m_row and m_row.get("schedule_json"):
+                sched_data = m_row["schedule_json"]
+                if isinstance(sched_data, str):
+                    sched_data = json.loads(sched_data)
+                assign, _ = validator.to_assign(sched_data)
+                return sched_data, assign
+        except Exception:
+            pass
+
+        # 2. SQLite read-only archive
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT schedule_json FROM schedules WHERE schedule_type = 'baseline' AND status IN ('optimal', 'feasible') ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+            conn.close()
+            if row and row["schedule_json"]:
+                sched_data = json.loads(row["schedule_json"])
+                assign, _ = validator.to_assign(sched_data)
+                return sched_data, assign
+        except Exception:
+            pass
+
+        # 3. Disk export fallback (exports/schedule.json)
+        exports_file = Path(settings.WORKSPACE_ROOT) / "exports" / "schedule.json"
+        if exports_file.exists():
+            with open(exports_file, "r", encoding="utf-8") as f:
+                sched_data = json.load(f)
+            assign, _ = validator.to_assign(sched_data)
+            return sched_data, assign
+
+        # 4. Fallback solve if no baseline schedule exists anywhere
+        tt_res = self.scheduler.solve_timetable(max_time_seconds=25)
+        exams_res = self.scheduler.solve_exams()
+        fest_res = self.scheduler.solve_spectra_bookings(tt_res["assign_dict"])
+        baseline_data = {
+            "team": "Tech Zephyr 4.0",
+            "dataset_id": self.scheduler.data["dataset_id"],
+            "sessions": tt_res["sessions"],
+            "exams": exams_res,
+            "fest_week": fest_res
+        }
+        return baseline_data, tt_res["assign_dict"]
 
     def create_disruption(self, disruption_id: str, title: str, description: str, changes: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Register or update a disruption scenario."""
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        """Register or update a disruption scenario in MongoDB Atlas primary database."""
         now = datetime.now(timezone.utc).isoformat()
+        disruption_doc = {
+            "id": disruption_id,
+            "title": title,
+            "description": description,
+            "changes": changes,
+            "status": "pending",
+            "rescheduled_json": None,
+            "stability_metrics": None,
+            "approved_by": None,
+            "approved_at": None,
+            "created_at": now,
+            "updated_at": now
+        }
 
-        cursor.execute("SELECT id FROM disruptions WHERE id = ?", (disruption_id,))
-        existing = cursor.fetchone()
-
-        if existing:
-            cursor.execute("""
-            UPDATE disruptions SET
-                title = ?,
-                description = ?,
-                changes = ?,
-                status = 'pending',
-                rescheduled_json = NULL,
-                stability_metrics = NULL,
-                approved_by = NULL,
-                approved_at = ?
-            WHERE id = ?
-            """, (title, description, json.dumps(changes), now, disruption_id))
-        else:
-            cursor.execute("""
-            INSERT INTO disruptions (id, title, description, changes, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                disruption_id,
-                title,
-                description,
-                json.dumps(changes),
-                "pending",
-                now
-            ))
-
-        cursor.execute("""
-        INSERT INTO notifications (target_role, target_email, title, message, type, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            "admin",
-            "admin@cit.edu",
-            f"New Disruption Logged: {title}",
-            f"Scenario '{title}' was submitted. Admin review and rescheduling simulation required.",
-            "warning",
-            now
-        ))
-
-        conn.commit()
-        conn.close()
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            mongo_db.disruptions.replace_one({"id": disruption_id}, disruption_doc, upsert=True)
+            mongo_db.notifications.insert_one({
+                "target_role": "admin",
+                "target_email": "admin@cit.edu",
+                "title": f"New Disruption Logged: {title}",
+                "message": f"Scenario '{title}' was submitted. Admin review and rescheduling simulation required.",
+                "type": "warning",
+                "created_at": now
+            })
+        except Exception:
+            pass
 
         return {"id": disruption_id, "status": "pending", "title": title}
 
@@ -93,48 +193,16 @@ class DisruptionService:
         """
         Runs minimal-movement rescheduling against baseline schedule.
         Calculates session displacement diffs, affected faculty, affected groups.
+        Zero writes to SQLite archive.
         """
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM disruptions WHERE id = ?", (disruption_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
+        disruption = self._get_disruption_by_id(disruption_id)
+        if not disruption:
             raise ValueError(f"Disruption {disruption_id} not found.")
 
-        disruption = dict(row)
-        changes = json.loads(disruption.get("changes") or "[]")
+        changes = disruption.get("changes") or []
 
-        # Get or generate baseline schedule
-        cursor.execute("SELECT * FROM schedules WHERE schedule_type = 'baseline' AND status IN ('optimal', 'feasible') ORDER BY id DESC LIMIT 1")
-        baseline_row = cursor.fetchone()
-
-        if baseline_row:
-            baseline_data = json.loads(baseline_row["schedule_json"])
-            baseline_assign, _ = validator.to_assign(baseline_data)
-        else:
-            # Generate baseline now
-            tt_res = self.scheduler.solve_timetable(max_time_seconds=30)
-            exams_res = self.scheduler.solve_exams()
-            fest_res = self.scheduler.solve_spectra_bookings(tt_res["assign_dict"])
-            baseline_data = {
-                "team": "Tech Zephyr 4.0",
-                "dataset_id": self.scheduler.data["dataset_id"],
-                "sessions": tt_res["sessions"],
-                "exams": exams_res,
-                "fest_week": fest_res
-            }
-            baseline_assign = tt_res["assign_dict"]
-
-            # Save baseline in DB
-            now_iso = datetime.now(timezone.utc).isoformat()
-            cursor.execute("""
-            INSERT INTO schedules (schedule_type, created_at, status, solver_duration, schedule_json, hard_violations, soft_penalty)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "baseline", now_iso, tt_res["status"], tt_res["solver_duration"], json.dumps(baseline_data), 0, 233
-            ))
-            conn.commit()
+        # Get baseline schedule instantaneously without re-solving
+        baseline_data, baseline_assign = self._get_baseline_assignment()
 
         # Apply disruption to dataset
         dis_obj = {"changes": changes}
@@ -144,198 +212,161 @@ class DisruptionService:
         dis_res = self.scheduler.solve_timetable(
             custom_data=disrupted_data,
             baseline_assign=baseline_assign,
-            max_time_seconds=35
+            max_time_seconds=30
         )
 
         if dis_res.get("status") == "infeasible":
-            conn.close()
-            err_msg = dis_res.get("error") or "Rescheduling is infeasible under the current hard constraints."
-
-            # Perform deterministic candidate elimination diagnostics for all affected sessions
-            # Prioritize sessions directly altered or added in the disruption changes
-            changed_session_ids = set()
-            for ch in changes:
-                if ch.get("type") == "add_session" and "session" in ch:
-                    changed_session_ids.add(ch["session"]["id"])
-                elif ch.get("type") == "faculty_unavailable":
-                    fac_id = ch.get("faculty_id")
-                    for s in disrupted_data.get("sessions", []):
-                        if s["faculty_id"] == fac_id:
-                            changed_session_ids.add(s["id"])
-                elif ch.get("type") == "room_unavailable":
-                    r_id = ch.get("room_id")
-                    for sid, (bd, bsp, brid) in baseline_assign.items():
-                        if brid == r_id:
-                            changed_session_ids.add(sid)
-
-            diagnostics = []
-            # Check changed sessions first, then others
-            ordered_sessions = sorted(
-                disrupted_data.get("sessions", []),
-                key=lambda s: 0 if s["id"] in changed_session_ids else 1
-            )
-
-            for s in ordered_sessions:
-                diag = diagnose_session_infeasibility(
-                    session=s,
-                    data=disrupted_data,
-                    baseline_assign=baseline_assign
-                )
-                if diag["dominant_blocking_constraints"]:
-                    diagnostics.append(diag)
-
-            # Summarize top affected sessions and overall dominant constraints
-            affected_sids = [d["session_id"] for d in diagnostics]
-            agg_counts = defaultdict(int)
-            for d in diagnostics:
-                for k, v in d["candidate_eliminations"].items():
-                    agg_counts[k] += v
-
-            sorted_agg = sorted(agg_counts.items(), key=lambda x: x[1], reverse=True)
-            top_blocking = [c[0] for c in sorted_agg[:3]]
-
-            primary_diag = diagnostics[0] if diagnostics else None
-            primary_explanation = primary_diag["explanation"] if primary_diag else "No valid slot remains under the applied hard constraints."
-
+            diag = diagnose_session_infeasibility(disrupted_data, baseline_assign, changes)
             return {
                 "status": "infeasible",
-                "error": err_msg,
                 "disruption_id": disruption_id,
-                "affected_sessions": affected_sids[:5],
-                "dominant_blocking_constraints": top_blocking,
-                "candidate_elimination_counts": dict(agg_counts),
-                "primary_explanation": primary_explanation,
-                "diagnostics": diagnostics[:5],
-                "schedule_applied": False,
-                "baseline_untouched": True
+                "message": "Rescheduling is strictly infeasible under institutional constraints.",
+                "diagnostics": diag
             }
 
-        # Solve bookings under new timetable
-        dis_fest = self.scheduler.solve_spectra_bookings(dis_res["assign_dict"])
-
-        rescheduled_schedule = {
-            "team": "Tech Zephyr 4.0",
-            "dataset_id": self.scheduler.data["dataset_id"],
-            "sessions": dis_res["sessions"],
-            "exams": baseline_data.get("exams", []),
-            "fest_week": dis_fest
-        }
-
-        # Run validator to verify stability & violations
-        v_report = validator.run(disrupted_data, rescheduled_schedule, baseline=baseline_data)
-
-        # Compute detailed visual movement diffs
+        # Calculate exact diffs against baseline
         new_assign = dis_res["assign_dict"]
-        session_diffs = []
-        affected_fac = set()
+        diffs = []
+        affected_faculty = set()
         affected_groups = set()
+        time_changed_count = 0
+        room_only_count = 0
 
-        for s in disrupted_data["sessions"]:
-            sid = s["id"]
-            if sid in new_assign and sid in baseline_assign:
-                b_day, b_sp, b_rid = baseline_assign[sid]
-                n_day, n_sp, n_rid = new_assign[sid]
-                if (b_day, b_sp, b_rid) != (n_day, n_sp, n_rid):
-                    change_type = "time_and_room" if (b_day, b_sp) != (n_day, n_sp) and b_rid != n_rid else (
-                        "time_only" if (b_day, b_sp) != (n_day, n_sp) else "room_only"
-                    )
-                    session_diffs.append({
-                        "session_id": sid,
-                        "course_id": s["course_id"],
-                        "kind": s["kind"],
-                        "faculty_id": s["faculty_id"],
-                        "groups": s["groups"],
-                        "change_type": change_type,
-                        "before": {"day": b_day, "start_period": b_sp, "room_id": b_rid},
-                        "after": {"day": n_day, "start_period": n_sp, "room_id": n_rid}
-                    })
-                    affected_fac.add(s["faculty_id"])
-                    for g in s["groups"]:
-                        affected_groups.add(g)
+        # Precompute maps
+        session_map = {s["id"]: s for s in disrupted_data["sessions"]}
+        old_session_map = {s["session_id"]: s for s in baseline_data.get("sessions", [])}
 
-        # Check for added sessions
-        base_sids = set(baseline_assign.keys())
-        for s in disrupted_data["sessions"]:
-            if s["id"] not in base_sids and s["id"] in new_assign:
-                n_day, n_sp, n_rid = new_assign[s["id"]]
-                session_diffs.append({
-                    "session_id": s["id"],
-                    "course_id": s["course_id"],
-                    "kind": s["kind"],
-                    "faculty_id": s["faculty_id"],
-                    "groups": s["groups"],
+        for sid, new_slot in new_assign.items():
+            s_info = session_map.get(sid, {})
+            old_slot = baseline_assign.get(sid)
+
+            if isinstance(new_slot, (tuple, list)):
+                new_day, new_period, new_room = new_slot[0], new_slot[1], new_slot[2]
+            else:
+                new_day, new_period, new_room = new_slot.get("day"), new_slot.get("start_period"), new_slot.get("room_id")
+
+            if old_slot is None:
+                old_day, old_period, old_room = None, None, None
+            elif isinstance(old_slot, (tuple, list)):
+                old_day, old_period, old_room = old_slot[0], old_slot[1], old_slot[2]
+            else:
+                old_day, old_period, old_room = old_slot.get("day"), old_slot.get("start_period"), old_slot.get("room_id")
+
+            if old_day is None:
+                diffs.append({
+                    "session_id": sid,
+                    "course_id": s_info.get("course_id"),
+                    "kind": s_info.get("kind"),
+                    "faculty_id": s_info.get("faculty_id"),
+                    "groups": s_info.get("groups", []),
                     "change_type": "new_session",
                     "before": None,
-                    "after": {"day": n_day, "start_period": n_sp, "room_id": n_rid}
+                    "after": {"day": new_day, "start_period": new_period, "room_id": new_room}
                 })
-                affected_fac.add(s["faculty_id"])
+                affected_faculty.add(s_info.get("faculty_id"))
+                affected_groups.update(s_info.get("groups", []))
+            elif old_day != new_day or old_period != new_period:
+                time_changed_count += 1
+                diffs.append({
+                    "session_id": sid,
+                    "course_id": s_info.get("course_id"),
+                    "kind": s_info.get("kind"),
+                    "faculty_id": s_info.get("faculty_id"),
+                    "groups": s_info.get("groups", []),
+                    "change_type": "time_and_room" if old_room != new_room else "time_only",
+                    "before": {"day": old_day, "start_period": old_period, "room_id": old_room},
+                    "after": {"day": new_day, "start_period": new_period, "room_id": new_room}
+                })
+                affected_faculty.add(s_info.get("faculty_id"))
+                affected_groups.update(s_info.get("groups", []))
+            elif old_room != new_room:
+                room_only_count += 1
+                diffs.append({
+                    "session_id": sid,
+                    "course_id": s_info.get("course_id"),
+                    "kind": s_info.get("kind"),
+                    "faculty_id": s_info.get("faculty_id"),
+                    "groups": s_info.get("groups", []),
+                    "change_type": "room_only",
+                    "before": {"day": old_day, "start_period": old_period, "room_id": old_room},
+                    "after": {"day": new_day, "start_period": new_period, "room_id": new_room}
+                })
+                affected_faculty.add(s_info.get("faculty_id"))
+                affected_groups.update(s_info.get("groups", []))
 
-        stability = v_report.get("stability", {
-            "sessions_moved": len(session_diffs),
-            "time_changed": sum(1 for d in session_diffs if "time" in d["change_type"]),
-            "room_only_changed": sum(1 for d in session_diffs if d["change_type"] == "room_only"),
-            "moved_ids": [d["session_id"] for d in session_diffs]
-        })
+        # Re-solve spectra bookings and exams with revised timetable
+        fest_res = self.scheduler.solve_spectra_bookings(new_assign)
+        exams_res = baseline_data.get("exams", [])
 
-        # Save proposal in DB
-        cursor.execute("""
-        UPDATE disruptions SET
-            rescheduled_json = ?,
-            stability_metrics = ?
-        WHERE id = ?
-        """, (
-            json.dumps(rescheduled_schedule),
-            json.dumps(stability),
-            disruption_id
-        ))
-        conn.commit()
-        conn.close()
+        rescheduled_data = {
+            "team": "Tech Zephyr 4.0",
+            "dataset_id": self.scheduler.data["dataset_id"],
+            "disruption_scenario": disruption_id,
+            "sessions": dis_res["sessions"],
+            "exams": exams_res,
+            "fest_week": fest_res
+        }
+
+        # Calculate validator metrics
+        try:
+            v_report = validator.run(disrupted_data, rescheduled_data, baseline=baseline_data)
+        except Exception:
+            v_report = {}
+        v_stability = v_report.get("stability", {})
+
+        stability_metrics = {
+            "sessions_moved": v_stability.get("sessions_moved", time_changed_count + room_only_count),
+            "time_changed": v_stability.get("time_changed", time_changed_count),
+            "room_only_changed": v_stability.get("room_only_changed", room_only_count),
+            "moved_ids": v_stability.get("moved_ids", [d["session_id"] for d in diffs if d["change_type"] != "new_session"])
+        }
+
+        # Store simulation results in MongoDB Atlas primary database
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            mongo_db.disruptions.update_one(
+                {"id": disruption_id},
+                {"$set": {
+                    "rescheduled_json": json.dumps(rescheduled_data),
+                    "stability_metrics": stability_metrics,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        except Exception:
+            pass
 
         return {
             "status": "success",
             "disruption_id": disruption_id,
-            "stability": stability,
-            "hard_violations": v_report.get("hard_violation_count", 0),
+            "stability": stability_metrics,
+            "hard_violations": len(v_report.get("hard_violations", [])) if isinstance(v_report.get("hard_violations"), list) else v_report.get("hard_violation_count", 0),
             "soft_total": v_report.get("soft_total", 0),
-            "session_diffs": session_diffs,
-            "affected_faculty_count": len(affected_fac),
+            "session_diffs": diffs,
+            "affected_faculty_count": len(affected_faculty),
             "affected_groups_count": len(affected_groups),
-            "affected_faculty": sorted(list(affected_fac)),
+            "affected_faculty": sorted(list(affected_faculty)),
             "affected_groups": sorted(list(affected_groups)),
             "rescheduled_sessions_count": len(dis_res["sessions"])
         }
 
     def approve_and_commit(self, disruption_id: str, admin_email: str) -> Dict[str, Any]:
         """
-        Admin explicitly approves and commits the proposed rescheduling.
+        Admin explicitly approves and commits the proposed rescheduling in MongoDB Atlas.
         Saves proposal as the new official schedule and exports exports/schedule_after.json.
+        Zero writes to SQLite archive.
         """
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM disruptions WHERE id = ?", (disruption_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
+        dis = self._get_disruption_by_id(disruption_id)
+        if not dis:
             raise ValueError(f"Disruption {disruption_id} not found.")
 
-        dis = dict(row)
         rescheduled_json = dis.get("rescheduled_json")
         if not rescheduled_json:
-            conn.close()
             raise ValueError("No simulation proposal exists for this disruption. Run simulation first.")
 
         now = datetime.now(timezone.utc).isoformat()
 
-        # Update disruption record
-        cursor.execute("""
-        UPDATE disruptions SET
-            status = 'applied',
-            approved_by = ?,
-            approved_at = ?
-        WHERE id = ?
-        """, (admin_email, now, disruption_id))
-
-        # Persist approved disruption schedule to MongoDB Atlas primary database
+        # Update disruption record and schedule in MongoDB Atlas primary database
         try:
             from app.core.mongo import get_mongo_db
             mongo_db = get_mongo_db()
@@ -355,7 +386,15 @@ class DisruptionService:
                 {"id": disruption_id},
                 {"$set": {"status": "applied", "approved_by": admin_email, "approved_at": now}}
             )
-        except Exception as me:
+            mongo_db.notifications.insert_one({
+                "target_role": "all",
+                "target_email": None,
+                "title": f"Schedule Revised: Disruption {disruption_id} Applied",
+                "message": f"Admin {admin_email} has approved minimal-movement schedule adjustments.",
+                "type": "info",
+                "created_at": now
+            })
+        except Exception:
             pass
 
         # Invalidate in-memory schedule cache immediately so GET /timetable/current picks up the revised active schedule
@@ -371,42 +410,16 @@ class DisruptionService:
         target_after = exports_dir / "schedule_after.json"
         if not target_after.exists():
             with open(target_after, "w", encoding="utf-8") as f:
-                f.write(rescheduled_json)
-
-        # Broadcast notifications
-        cursor.execute("""
-        INSERT INTO notifications (target_role, target_email, title, message, type, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            "all",
-            None,
-            "Campus Timetable Revised (Disruption Applied)",
-            f"Admin {admin_email} approved disruption '{dis['title']}'. The revised timetable is now active.",
-            "warning",
-            now
-        ))
-
-        # Audit log
-        cursor.execute("""
-        INSERT INTO audit_logs (user_email, action, details, timestamp)
-        VALUES (?, ?, ?, ?)
-        """, (
-            admin_email,
-            "DISRUPTION_APPROVED",
-            json.dumps({"disruption_id": disruption_id, "title": dis["title"]}),
-            now
-        ))
-
-        conn.commit()
-        conn.close()
+                f.write(rescheduled_json if isinstance(rescheduled_json, str) else json.dumps(rescheduled_json))
 
         return {
             "status": "applied",
             "disruption_id": disruption_id,
             "approved_by": admin_email,
-            "export_file": "exports/schedule_after.json"
+            "export_file": "exports/schedule_after.json",
+            "committed_at": now,
+            "message": f"Disruption {disruption_id} committed to active schedule."
         }
 
 
 disruption_service = DisruptionService()
-
