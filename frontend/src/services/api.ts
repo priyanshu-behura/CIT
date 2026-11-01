@@ -37,7 +37,10 @@ export interface AIChatResponse {
   fallback_reason?: string;
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+// Normalize API base URL: strips trailing slashes to guarantee clean routing
+// When VITE_API_URL is set (production on Vercel), calls hit the deployed FastAPI backend
+// When unset/empty (local development), calls fall back to relative paths for Vite proxying
+const BASE_URL = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
 
 function getToken(): string | null {
   return localStorage.getItem('tech_zephyr_token');
@@ -88,7 +91,8 @@ async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${url}`, {
+  const endpoint = url.startsWith('/') ? url : `/${url}`;
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });

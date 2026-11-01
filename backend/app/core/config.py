@@ -1,6 +1,8 @@
 import os
+import json
 from pathlib import Path
-from typing import List
+from typing import List, Union, Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Determine workspace root
@@ -9,8 +11,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 WORKSPACE_ROOT = BACKEND_DIR.parent
 
-# Default dataset path inside the starter pack
-DEFAULT_DATASET = WORKSPACE_ROOT / "CrunchWeek_StarterPack (1)" / "CrunchWeek_StarterPack" / "data" / "cit_public.json"
+# Resolve default dataset path with candidate fallbacks for standalone/containerized deployments
+def _find_default_dataset() -> Path:
+    candidates = [
+        WORKSPACE_ROOT / "CrunchWeek_StarterPack (1)" / "CrunchWeek_StarterPack" / "data" / "cit_public.json",
+        BACKEND_DIR / "data" / "cit_public.json",
+        WORKSPACE_ROOT / "data" / "cit_public.json",
+        BACKEND_DIR / "cit_public.json",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    return candidates[0]
+
+DEFAULT_DATASET = _find_default_dataset()
 
 
 class Settings(BaseSettings):
@@ -24,8 +38,8 @@ class Settings(BaseSettings):
     BACKEND_DIR: str = str(BACKEND_DIR)
     
     # CORS Configuration
-    # Include 5173 (default Vite port) and 5174+ (fallback when 5173 is occupied)
-    CORS_ORIGINS: List[str] = [
+    # Accepts JSON array string, comma-separated string, or list of origins
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
@@ -37,6 +51,25 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="after")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if item]
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, (list, tuple)):
+            return [str(item).strip() for item in v if item]
+        return []
 
     # MongoDB Atlas Configuration
     MONGODB_URI: str = "mongodb+srv://sumitkumarpanigrahi9278_db_user:aYJBPRXaRaIrSypT@cluster0.cnbjszh.mongodb.net/?retryWrites=true&w=majority"

@@ -216,10 +216,6 @@ class AIChatService:
                         questions.append("What type of venue do you require? (e.g. Auditorium, Seminar Hall, Classroom, Lab)")
                 resp["follow_up_questions"] = questions
 
-        # Strict privacy & clean branding enforcement: Never expose internal technical model names
-        resp["model"] = "Campus AI"
-        resp.pop("fallback_reason", None)
-
         return resp
 
     def _call_gemini(
@@ -316,7 +312,7 @@ class AIChatService:
             parsed["follow_up_questions"] = authoritative_draft.get("follow_up_questions", [])
 
         parsed["is_ai_powered"] = True
-        parsed["model"] = "Campus AI"
+        parsed["model"] = successful_model
         return self._sanitize_response(parsed)
 
     def _deterministic_answer(self, query: str, user_role: str = "guest", user_email: Optional[str] = None) -> Dict[str, Any]:
@@ -711,7 +707,7 @@ class AIChatService:
                     "needs_input": False,
                     "needs_input_fields": [],
                     "is_ai_powered": self.get_client() is not None,
-                    "model": "Campus AI",
+                    "model": "deterministic-engine",
                 }
 
         # 2. Try Gemini if client available
@@ -723,12 +719,11 @@ class AIChatService:
                 logger.warning(f"AI chat execution notice ({type(e).__name__}). Falling back to deterministic engine.")
                 ans = self._deterministic_answer(query, user_role, user_email)
                 ans["is_ai_powered"] = False
-                ans["model"] = "Campus AI"
+                ans["model"] = "deterministic-engine"
                 return ans
 
         # 3. Deterministic Fallback
         ans = self._deterministic_answer(query, user_role, user_email)
-        ans["model"] = "Campus AI"
         return ans
 
 
