@@ -17,7 +17,8 @@ import {
   Calendar,
   XCircle,
   FileText,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
@@ -42,28 +43,43 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [isSolving, setIsSolving] = useState(false);
   const [solveMessage, setSolveMessage] = useState<string | null>(null);
+  const [isTimetableLoading, setIsTimetableLoading] = useState(true);
+  const [timetableError, setTimetableError] = useState<string | null>(null);
 
   // Admin Reset State
   const [showResetModal, setShowResetModal] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  const fetchTimetable = async () => {
+    setIsTimetableLoading(true);
+    setTimetableError(null);
+    try {
+      const ttRes = await api.getCurrentTimetable();
+      setSessions(ttRes.sessions || []);
+    } catch (err: any) {
+      setTimetableError(err?.message || 'Failed to load timetable schedule');
+    } finally {
+      setIsTimetableLoading(false);
+    }
+  };
+
+  const loadOtherData = async () => {
+    try {
+      const [bRes, anRes] = await Promise.allSettled([
+        api.getAllBookings(),
+        api.getAnalytics()
+      ]);
+      if (bRes.status === 'fulfilled') setBookings(bRes.value);
+      if (anRes.status === 'fulfilled') setAnalytics(anRes.value);
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        const [ttRes, bRes, anRes] = await Promise.all([
-          api.getCurrentTimetable(),
-          api.getAllBookings(),
-          api.getAnalytics()
-        ]);
-        setSessions(ttRes.sessions);
-        setBookings(bRes);
-        setAnalytics(anRes);
-      } catch {
-        // ignore
-      }
-    };
-    loadDashboardData();
+    fetchTimetable();
+    loadOtherData();
   }, []);
 
   const handleGenerateTimetable = async () => {
@@ -72,8 +88,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     try {
       const res = await api.generateTimetable();
       setSolveMessage(`Solver Success! Scheduled ${res.total_sessions_scheduled} sessions with ${res.hard_violations} hard violations in ${res.solver_duration}s.`);
-      const ttRes = await api.getCurrentTimetable();
-      setSessions(ttRes.sessions);
+      await fetchTimetable();
     } catch (err: any) {
       setSolveMessage(`Solver Error: ${err?.message || 'Failed to generate timetable'}`);
     } finally {
@@ -91,14 +106,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         message: `${res.message} (Restored Soft Penalty: ${res.baseline_restored?.soft_penalty ?? 232}, Hard Violations: ${res.baseline_restored?.hard_violations ?? 0})`
       });
       // Refresh dashboard data
-      const [ttRes, bRes, anRes] = await Promise.all([
-        api.getCurrentTimetable(),
-        api.getAllBookings(),
-        api.getAnalytics()
-      ]);
-      setSessions(ttRes.sessions);
-      setBookings(bRes);
-      setAnalytics(anRes);
+      fetchTimetable();
+      loadOtherData();
       setShowResetModal(false);
     } catch (err: any) {
       setResetFeedback({
@@ -319,25 +328,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </button>
               </CardHeader>
 
-              <div className="space-y-2">
-                {sessions.slice(0, 5).map((s) => (
-                  <div key={s.session_id} className="p-3 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 flex items-center justify-between text-xs">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#1E1915]">{s.course_name}</span>
-                        <Badge variant={s.kind === 'lab' ? 'warning' : 'academic'} size="sm">{s.kind}</Badge>
+              {isTimetableLoading ? (
+                <div className="p-8 text-center text-xs text-[#5B5048] flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#A9502B]" />
+                  <span>Loading scheduled sessions...</span>
+                </div>
+              ) : timetableError ? (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                  <span>{timetableError}</span>
+                  <button
+                    onClick={fetchTimetable}
+                    className="px-2.5 py-1 rounded bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-medium text-xs transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[#5B5048]">
+                  No sessions scheduled. Click 'Generate Optimized Timetable' to run the solver.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.slice(0, 5).map((s) => (
+                    <div key={s.session_id} className="p-3 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#1E1915]">{s.course_name}</span>
+                          <Badge variant={s.kind === 'lab' ? 'warning' : 'academic'} size="sm">{s.kind}</Badge>
+                        </div>
+                        <p className="text-[11px] text-[#5B5048] mt-0.5">
+                          {s.faculty_name} &middot; Groups: {s.groups.join(', ')}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-[#5B5048] mt-0.5">
-                        {s.faculty_name} &middot; Groups: {s.groups.join(', ')}
-                      </p>
+                      <div className="text-right">
+                        <span className="font-mono font-bold text-[#243C50]">{s.day} P{s.start_period}–P{s.end_period}</span>
+                        <p className="text-[11px] text-[#5B5048]">{s.room_name}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-[#243C50]">{s.day} P{s.start_period}–P{s.end_period}</span>
-                      <p className="text-[11px] text-[#5B5048]">{s.room_name}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
 
@@ -424,7 +454,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </CardHeader>
 
               <div className="space-y-2.5">
-                {facultySessions.length === 0 ? (
+                {isTimetableLoading ? (
+                  <div className="p-8 text-center text-xs text-[#5B5048] flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#A9502B]" />
+                    <span>Loading teaching schedule...</span>
+                  </div>
+                ) : timetableError ? (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                    <span>{timetableError}</span>
+                    <button
+                      onClick={fetchTimetable}
+                      className="px-2.5 py-1 rounded bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-medium text-xs transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : facultySessions.length === 0 ? (
                   <div className="p-8 text-center text-xs text-[#5B5048]">
                     No classes scheduled. Click 'Generate Timetable' or view institute timetable.
                   </div>
@@ -659,31 +704,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1E1915]/10 font-sans">
-                    {sessions
-                      .filter((s) => s.course_id?.startsWith(user?.department || 'CS') || s.groups?.some(g => g.startsWith(user?.department || 'CSE')))
-                      .slice(0, 7)
-                      .map((s) => (
-                        <tr key={s.session_id} className="hover:bg-[#F3ECE2]/60 transition-colors">
-                          <td className="py-2.5 px-2 font-medium text-[#1E1915]">
-                            <div className="font-bold">{s.course_name}</div>
-                            <div className="text-[10px] text-[#5B5048] font-mono">{s.course_id}</div>
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                              s.kind === 'lab'
-                                ? 'bg-indigo-950/10 text-indigo-800 border-indigo-300'
-                                : 'bg-[#243C50]/10 text-[#243C50] border-[#243C50]/30'
-                            }`}>
-                              {s.kind.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-2 text-[#5B5048]">{s.faculty_name}</td>
-                          <td className="py-2.5 px-2 font-mono font-bold text-[#A9502B]">{s.room_id}</td>
-                          <td className="py-2.5 px-2 text-right font-mono font-bold text-[#1E1915]">
-                            {s.day} P{s.start_period}–P{s.end_period}
-                          </td>
-                        </tr>
-                      ))}
+                    {isTimetableLoading ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-xs text-[#5B5048]">
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-[#A9502B]" />
+                            <span>Loading curriculum schedule...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : timetableError ? (
+                      <tr>
+                        <td colSpan={5} className="py-4 px-2 text-center text-xs text-amber-800 bg-amber-50/50">
+                          <div className="flex items-center justify-center gap-3">
+                            <span>{timetableError}</span>
+                            <button
+                              onClick={fetchTimetable}
+                              className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-medium text-xs transition-colors"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : sessions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-xs text-[#5B5048]">
+                          No cohort classes scheduled yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      sessions
+                        .filter((s) => s.course_id?.startsWith(user?.department || 'CS') || s.groups?.some(g => g.startsWith(user?.department || 'CSE')))
+                        .slice(0, 7)
+                        .map((s) => (
+                          <tr key={s.session_id} className="hover:bg-[#F3ECE2]/60 transition-colors">
+                            <td className="py-2.5 px-2 font-medium text-[#1E1915]">
+                              <div className="font-bold">{s.course_name}</div>
+                              <div className="text-[10px] text-[#5B5048] font-mono">{s.course_id}</div>
+                            </td>
+                            <td className="py-2.5 px-2">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                s.kind === 'lab'
+                                  ? 'bg-indigo-950/10 text-indigo-800 border-indigo-300'
+                                  : 'bg-[#243C50]/10 text-[#243C50] border-[#243C50]/30'
+                              }`}>
+                                {s.kind.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-[#5B5048]">{s.faculty_name}</td>
+                            <td className="py-2.5 px-2 font-mono font-bold text-[#A9502B]">{s.room_id}</td>
+                            <td className="py-2.5 px-2 text-right font-mono font-bold text-[#1E1915]">
+                              {s.day} P{s.start_period}–P{s.end_period}
+                            </td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>

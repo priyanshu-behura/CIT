@@ -62,6 +62,16 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({ user }) => {
     loadBookings();
   }, [statusFilter]);
 
+  useEffect(() => {
+    const handleBookingCreated = () => {
+      loadBookings();
+    };
+    window.addEventListener('booking-created', handleBookingCreated);
+    return () => {
+      window.removeEventListener('booking-created', handleBookingCreated);
+    };
+  }, [statusFilter]);
+
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionError(null);

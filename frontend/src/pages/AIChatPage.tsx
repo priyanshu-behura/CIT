@@ -11,7 +11,8 @@ import {
   Users,
   Building2,
   AlertCircle,
-  Cpu
+  Cpu,
+  ArrowRight
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -20,6 +21,7 @@ import type { User } from '../types/dataset';
 
 interface AIChatPageProps {
   user: User | null;
+  onNavigate?: (page: string) => void;
 }
 
 interface ChatMessage {
@@ -40,7 +42,8 @@ interface ChatMessage {
   submit_error?: string;
 }
 
-export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
+export const AIChatPage: React.FC<AIChatPageProps> = ({ user, onNavigate }) => {
+  const submittingRef = useRef<Set<string>>(new Set());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -135,6 +138,7 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
 
   const handleSubmitDraftBooking = async (msgId: string, draft: any) => {
     if (!draft) return;
+    if (submittingRef.current.has(msgId)) return;
 
     if (!draft.attendance || draft.attendance <= 0) {
       setMessages((prev) =>
@@ -142,7 +146,7 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
           m.id === msgId
             ? {
                 ...m,
-                submit_error: 'Attendance is required before confirming this booking request.',
+                submit_error: 'Attendance is required before confirming this booking request. Please specify the attendee count.',
               }
             : m
         )
@@ -164,6 +168,7 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
       return;
     }
 
+    submittingRef.current.add(msgId);
     setMessages((prev) =>
       prev.map((m) => (m.id === msgId ? { ...m, is_submitting: true, submit_error: undefined } : m))
     );
@@ -172,7 +177,7 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
       const duration = draft.end_period - draft.start_period + 1;
       const res = await api.createBooking({
         title: (draft.title || 'Campus Event').trim(),
-        description: `Booking requested via CIT AI Assistant: ${draft.title}`,
+        description: `Booking requested via CIT Campus AI: ${draft.title || 'Campus Event'}`,
         requested_category: draft.category || 'club_event',
         attendance: draft.attendance,
         duration_periods: duration > 0 ? duration : 2,
@@ -183,6 +188,11 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
         needs: draft.needs || ['projector', 'ac'],
         preferred_room_id: draft.preferred_room_id || undefined,
       });
+
+      // Broadcast booking-created event so BookingsPage updates in real time
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('booking-created', { detail: res }));
+      }
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -207,6 +217,8 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
             : m
         )
       );
+    } finally {
+      submittingRef.current.delete(msgId);
     }
   };
 
@@ -315,9 +327,20 @@ export const AIChatPage: React.FC<AIChatPageProps> = ({ user }) => {
 
                     {/* Booking Submission Status or Action Button */}
                     {m.booking_submitted_id ? (
-                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-2 font-medium">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>Booking request registered as <strong>{m.booking_submitted_id}</strong>. Awaiting administrator review.</span>
+                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex flex-wrap items-center justify-between gap-2 font-medium">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>Booking request registered as <strong>{m.booking_submitted_id}</strong>. Awaiting administrator review.</span>
+                        </div>
+                        {onNavigate && (
+                          <button
+                            onClick={() => onNavigate('bookings')}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-[11px] transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                          >
+                            <span>View in Booking Requests</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center justify-between pt-1">

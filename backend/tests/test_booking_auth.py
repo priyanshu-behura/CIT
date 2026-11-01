@@ -27,15 +27,21 @@ def get_booking_row_count() -> int:
     return cnt
 
 
+def get_mongo_booking(booking_id: str):
+    from app.core.mongo import get_mongo_db
+    mongo_db = get_mongo_db()
+    return mongo_db.bookings.find_one({"id": booking_id})
+
+
 def cleanup_test_bookings(created_ids):
     if not created_ids:
         return
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    placeholders = ",".join("?" for _ in created_ids)
-    cur.execute(f"DELETE FROM bookings WHERE id IN ({placeholders})", list(created_ids))
-    conn.commit()
-    conn.close()
+    try:
+        from app.core.mongo import get_mongo_db
+        mongo_db = get_mongo_db()
+        mongo_db.bookings.delete_many({"id": {"$in": list(created_ids)}})
+    except Exception:
+        pass
 
 
 def test_booking_anonymous_rejected():
@@ -119,18 +125,20 @@ def test_booking_club_user_success_and_identity_derived_from_token():
         assert "id" in data
         created_ids.add(data["id"])
 
-        # Verify identity in database came strictly from token
+        # Verify identity in MongoDB primary database came strictly from token
+        doc = get_mongo_booking(data["id"])
+        assert doc is not None
+        assert doc["requester_name"] == "Rohan Das (Robotics & AI Club Lead)"
+        assert doc["requester_email"] == "club.robotics@cit.edu"
+        assert doc["role"] == "club"
+        assert doc["status"] == "pending"
+
+        # Verify SQLite archive remained strictly read-only
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
-        cur.execute("SELECT requester_name, requester_email, role, status FROM bookings WHERE id = ?", (data["id"],))
-        row = cur.fetchone()
+        cur.execute("SELECT COUNT(*) FROM bookings WHERE id = ?", (data["id"],))
+        assert cur.fetchone()[0] == 0, "SQLite archive must remain untouched"
         conn.close()
-
-        assert row is not None
-        assert row[0] == "Rohan Das (Robotics & AI Club Lead)"
-        assert row[1] == "club.robotics@cit.edu"
-        assert row[2] == "club"
-        assert row[3] == "pending"
     finally:
         cleanup_test_bookings(created_ids)
 
@@ -158,16 +166,12 @@ def test_booking_role_capping_club():
         data = res.json()
         created_ids.add(data["id"])
 
-        # Check DB record
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("SELECT requested_category, effective_category, role FROM bookings WHERE id = ?", (data["id"],))
-        row = cur.fetchone()
-        conn.close()
-
-        assert row[0] == "institute_event"  # requested category stored as requested
-        assert row[1] == "club_event"       # effective category server-side capped
-        assert row[2] == "club"
+        # Check MongoDB record
+        doc = get_mongo_booking(data["id"])
+        assert doc is not None
+        assert doc["requested_category"] == "institute_event"  # requested category stored as requested
+        assert doc["effective_category"] == "club_event"       # effective category server-side capped
+        assert doc["role"] == "club"
     finally:
         cleanup_test_bookings(created_ids)
 
@@ -199,17 +203,13 @@ def test_booking_forged_payload_ignored():
         data = res.json()
         created_ids.add(data["id"])
 
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("SELECT requester_name, requester_email, role, status, effective_category FROM bookings WHERE id = ?", (data["id"],))
-        row = cur.fetchone()
-        conn.close()
-
-        assert row[0] == "Rohan Das (Robotics & AI Club Lead)"   # NOT "Dean Admin"
-        assert row[1] == "club.robotics@cit.edu"               # NOT "dean@cit.edu"
-        assert row[2] == "club"                                 # NOT "admin"
-        assert row[3] == "pending"                              # NOT "approved"
-        assert row[4] == "club_event"                           # Capped to club_event
+        doc = get_mongo_booking(data["id"])
+        assert doc is not None
+        assert doc["requester_name"] == "Rohan Das (Robotics & AI Club Lead)"   # NOT "Dean Admin"
+        assert doc["requester_email"] == "club.robotics@cit.edu"               # NOT "dean@cit.edu"
+        assert doc["role"] == "club"                                 # NOT "admin"
+        assert doc["status"] == "pending"                              # NOT "approved"
+        assert doc["effective_category"] == "club_event"                           # Capped to club_event
     finally:
         cleanup_test_bookings(created_ids)
 
@@ -255,14 +255,13 @@ def test_booking_role_capping_coordinator_and_faculty():
         f_id = res_fac.json()["id"]
         created_ids.add(f_id)
 
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("SELECT effective_category FROM bookings WHERE id = ?", (c_id,))
-        assert cur.fetchone()[0] == "department_event"
+        doc_c = get_mongo_booking(c_id)
+        assert doc_c is not None
+        assert doc_c["effective_category"] == "department_event"
 
-        cur.execute("SELECT effective_category FROM bookings WHERE id = ?", (f_id,))
-        assert cur.fetchone()[0] == "guest_lecture"
-        conn.close()
+        doc_f = get_mongo_booking(f_id)
+        assert doc_f is not None
+        assert doc_f["effective_category"] == "guest_lecture"
     finally:
         cleanup_test_bookings(created_ids)
 

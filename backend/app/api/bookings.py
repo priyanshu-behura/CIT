@@ -54,7 +54,7 @@ def list_bookings(
     status: Optional[str] = Query(None),
     role: Optional[str] = Query(None)
 ):
-    """Retrieve all booking requests from SQLite database."""
+    """Retrieve all booking requests from MongoDB Atlas primary database."""
     return booking_service.get_all_bookings(status=status, role=role)
 
 
@@ -67,6 +67,7 @@ def create_booking(
     Submit a new booking request.
     Strictly requires authentication. Identity is derived strictly from the verified JWT token.
     Calculates effective category by applying server-side role caps.
+    Persists authoritative booking in MongoDB Atlas primary database.
     """
     user_name = current_user["full_name"]
     user_email = current_user["email"]
@@ -84,24 +85,31 @@ def create_booking(
     if duration is None:
         duration = max(1, req.end_period - req.start_period + 1)
 
-    res = booking_service.create_booking(
-        requester_name=user_name,
-        requester_email=user_email,
-        role=user_role,
-        title=req.title,
-        description=req.description or "",
-        requested_category=req.requested_category,
-        attendance=req.attendance,
-        duration_periods=duration,
-        day=day_clean,
-        start_period=req.start_period,
-        end_period=req.end_period,
-        room_types=req.room_types,
-        needs=req.needs,
-        preferred_room_id=req.preferred_room_id,
-        mandatory_for_groups=req.mandatory_for_groups
-    )
-    return res
+    preferred_room = req.preferred_room_id.strip() if req.preferred_room_id else None
+
+    try:
+        res = booking_service.create_booking(
+            requester_name=user_name,
+            requester_email=user_email,
+            role=user_role,
+            title=req.title,
+            description=req.description or "",
+            requested_category=req.requested_category,
+            attendance=req.attendance,
+            duration_periods=duration,
+            day=day_clean,
+            start_period=req.start_period,
+            end_period=req.end_period,
+            room_types=req.room_types,
+            needs=req.needs,
+            preferred_room_id=preferred_room,
+            mandatory_for_groups=req.mandatory_for_groups
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Booking persistence error: {str(e)}")
 
 
 @router.post("/{booking_id}/decision")

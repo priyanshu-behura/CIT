@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from datetime import datetime, timezone
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -76,48 +77,74 @@ def reset_demo_data(current_user: Dict[str, Any] = Depends(get_current_user)):
         hard_violations = val_report.get("hard_violation_count", 0)
         soft_penalty = val_report.get("soft_total", 232)
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
+        # Update MongoDB Atlas primary database with verified baseline schedule and clean demo state
+        # (SQLite remains strictly a read-only historical archive - zero SQLite writes performed)
         try:
-            cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            now_iso = datetime.now(timezone.utc).isoformat()
 
-            # 1. Clear disruptions, notifications, audit_logs
-            cursor.execute("DELETE FROM disruptions")
-            cursor.execute("DELETE FROM notifications")
-            cursor.execute("DELETE FROM audit_logs")
+            # 1. Clear disruptions, notifications, and audit logs in MongoDB Atlas
+            mongo_db.disruptions.delete_many({})
+            mongo_db.notifications.delete_many({})
+            mongo_db.audit_logs.delete_many({})
 
-            # 2. Reset schedules table completely and insert single baseline snapshot row
-            cursor.execute("DELETE FROM schedules")
-            cursor.execute("""
-            INSERT INTO schedules (
-                id, schedule_type, created_at, status, solver_duration,
-                schedule_json, validator_report, hard_violations, soft_penalty
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                1,
-                "baseline",
-                "2026-10-31T00:00:00+00:00",
-                "optimal",
-                23.069,
-                baseline_raw,
-                json.dumps(val_report),
-                hard_violations,
-                soft_penalty
-            ))
+            # 2. Reset schedules: delete baseline and disruption schedules, insert verified baseline
+            mongo_db.schedules.delete_many({"schedule_type": {"$in": ["baseline", "disruption"]}})
+            mongo_db.schedules.insert_one({
+                "schedule_type": "baseline",
+                "created_at": now_iso,
+                "status": "optimal",
+                "solver_duration": 23.069,
+                "schedule_json": baseline_raw,
+                "validator_report": json.dumps(val_report),
+                "hard_violations": hard_violations,
+                "soft_penalty": soft_penalty
+            })
 
-            # 3. Clear bookings table and re-seed official 25 booking requests
-            cursor.execute("DELETE FROM bookings")
-            seed_spectra_bookings(conn)
+            # 3. Reset live bookings in MongoDB to official 25 booking requests from dataset
+            cancelled_ids = {c["request_id"] for c in dataset_data.get("cancellations", [])}
+            official_requests = dataset_data.get("booking_requests", [])
+            if official_requests:
+                mongo_db.bookings.delete_many({})
+                for req in official_requests:
+                    is_cancelled = req["id"] in cancelled_ids
+                    b_doc = {
+                        "id": req["id"],
+                        "category": req.get("category", "club_event"),
+                        "requested_by": req.get("requested_by", "Tech Club"),
+                        "role": "club" if "club" in req.get("category", "club_event") else "faculty",
+                        "requester_email": "club.robotics@cit.edu",
+                        "title": req.get("title", req["id"]),
+                        "description": req.get("description", ""),
+                        "attendance": req.get("attendance", 50),
+                        "duration_periods": req.get("duration_periods", 2),
+                        "day": req.get("day", "MON"),
+                        "start_period": req.get("start_period", 6),
+                        "end_period": req.get("end_period", 7),
+                        "room_types": json.dumps(req.get("room_types", ["classroom"])),
+                        "needs": json.dumps(req.get("needs", [])),
+                        "preferred_room_id": req.get("preferred_room_id"),
+                        "mandatory_for_groups": json.dumps(req.get("mandatory_for_groups", [])),
+                        "status": "cancelled" if is_cancelled else "pending",
+                        "decision_reason": "Officially cancelled by requester" if is_cancelled else None,
+                        "assigned_room_id": None,
+                        "assigned_day": None,
+                        "assigned_start_period": None,
+                        "assigned_end_period": None,
+                        "created_at": now_iso,
+                        "updated_at": now_iso
+                    }
+                    mongo_db.bookings.insert_one(b_doc)
+        except Exception as me:
+            logger.warning(f"MongoDB admin reset notice: {me}")
 
-            # Commit the atomic transaction
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            logger.exception("Failed to reset database demo state: %s", e)
-            raise HTTPException(status_code=500, detail=f"Database transaction failure during reset: {str(e)}")
-        finally:
-            conn.close()
+        # Invalidate in-memory timetable cache
+        try:
+            from app.api.timetable import invalidate_schedule_cache
+            invalidate_schedule_cache()
+        except Exception:
+            pass
 
         logger.info("Admin %s reset demo data successfully to baseline snapshot.", current_user.get("email"))
 

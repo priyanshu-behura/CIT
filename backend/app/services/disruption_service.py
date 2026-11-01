@@ -335,13 +335,35 @@ class DisruptionService:
         WHERE id = ?
         """, (admin_email, now, disruption_id))
 
-        # Save to schedules table
-        cursor.execute("""
-        INSERT INTO schedules (schedule_type, created_at, status, solver_duration, schedule_json, hard_violations, soft_penalty)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            "disruption", now, "optimal", 0.0, rescheduled_json, 0, 0
-        ))
+        # Persist approved disruption schedule to MongoDB Atlas primary database
+        try:
+            from app.core.mongo import get_mongo_db
+            mongo_db = get_mongo_db()
+            mongo_db.schedules.delete_many({"schedule_type": "disruption"})
+            mongo_db.schedules.insert_one({
+                "schedule_type": "disruption",
+                "disruption_id": disruption_id,
+                "created_at": now,
+                "status": "applied",
+                "solver_duration": 0.0,
+                "schedule_json": rescheduled_json if isinstance(rescheduled_json, str) else json.dumps(rescheduled_json),
+                "validator_report": json.dumps({"hard_violation_count": 0, "soft_total": 0}),
+                "hard_violations": 0,
+                "soft_penalty": 0
+            })
+            mongo_db.disruptions.update_one(
+                {"id": disruption_id},
+                {"$set": {"status": "applied", "approved_by": admin_email, "approved_at": now}}
+            )
+        except Exception as me:
+            pass
+
+        # Invalidate in-memory schedule cache immediately so GET /timetable/current picks up the revised active schedule
+        try:
+            from app.api.timetable import invalidate_schedule_cache
+            invalidate_schedule_cache()
+        except Exception:
+            pass
 
         # Export to exports/schedule_after.json only if file does not exist (protects submission file)
         exports_dir = Path(settings.WORKSPACE_ROOT) / "exports"

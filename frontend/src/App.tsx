@@ -197,7 +197,7 @@ export const App: React.FC = () => {
       )}
 
       {currentPage === 'ai-chat' && (
-        <AIChatPage user={user} />
+        <AIChatPage user={user} onNavigate={(page) => setCurrentPage(page)} />
       )}
 
       {currentPage === 'reports' && (
