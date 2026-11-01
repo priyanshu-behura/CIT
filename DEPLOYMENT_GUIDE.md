@@ -156,3 +156,4 @@ Once both deployments are active:
 - [x] **No Git Credential Leaks:** All `.env` and SQLite `.db` files remain in `.gitignore`.
 - [x] **SPA Routing Protection:** `frontend/vercel.json` rewrites all subpaths to `index.html`.
 - [x] **Deterministic AI Fallback:** If Render cannot reach the Gemini API (e.g. quota limits or timeout), the backend automatically answers using its built-in deterministic campus NLP engine.
+

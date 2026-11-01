@@ -27,3 +27,4 @@ services:
         value: "https://*.vercel.app,http://localhost:5173"
       - key: PYTHON_VERSION
         value: 3.12.0
+
