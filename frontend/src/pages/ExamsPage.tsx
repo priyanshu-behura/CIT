@@ -44,39 +44,39 @@ export const ExamsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Midsem Examination Schedule</h2>
+            <h2 className="text-xl font-serif font-bold text-[#1E1915] tracking-tight">Midsem Examination Schedule</h2>
             <Badge variant="success">41 Exams Coordinated</Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5B5048] mt-1 font-sans">
             Official Midsem Week &middot; Monday–Saturday &middot; AM Session (09:30–11:30) & PM Session (14:00–16:00)
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 space-y-1">
+        <div className="p-3.5 rounded-xl bg-[#243C50]/10 border border-[#243C50]/20 text-xs text-[#243C50] space-y-1">
           <p className="font-bold flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <ShieldCheck className="h-4 w-4 text-[#243C50]" />
             Effective Room Capacity Halved (H5 & E2)
           </p>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-[#243C50]/80">
             Every venue's seating capacity is strictly halved ($\lfloor C/2 \rfloor$) for examinations to ensure proper separation.
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
-          <span className="font-semibold text-slate-500 uppercase tracking-wider text-[11px] flex items-center gap-1">
+          <span className="font-semibold text-[#5B5048] uppercase tracking-wider text-[11px] flex items-center gap-1 font-mono">
             <Filter className="h-3 w-3" /> Filter Exams:
           </span>
 
           <select
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value)}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium outline-none"
+            className="px-3 py-1.5 rounded-xl border border-[#1E1915]/15 bg-[#FBF8F3] text-[#1E1915] font-medium outline-none"
           >
             <option value="">All Student Cohorts (14 Groups)</option>
             {['CSE-1', 'CSE-2', 'CSE-3', 'ECE-1', 'ECE-2', 'ECE-3', 'EE-1', 'EE-2', 'EE-3', 'ME-1', 'ME-2', 'ME-3', 'CE-1', 'CE-2'].map((g) => (
@@ -91,7 +91,7 @@ export const ExamsPage: React.FC = () => {
               key={d}
               onClick={() => setSelectedDay(d)}
               className={`px-2.5 py-1 rounded-lg font-mono font-bold text-[11px] transition-all ${
-                selectedDay === d ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                selectedDay === d ? 'bg-[#A9502B] text-[#F3ECE2]' : 'text-[#5B5048] hover:bg-[#F3ECE2]'
               }`}
             >
               {d}
@@ -107,13 +107,13 @@ export const ExamsPage: React.FC = () => {
             <CardTitle>Midsem Examination Allocations ({exams.length})</CardTitle>
             <CardDescription>Validated room assignments and effective seating totals</CardDescription>
           </div>
-          <span className="text-xs font-mono text-slate-400">AM: 09:30–11:30 | PM: 14:00–16:00</span>
+          <span className="text-xs font-mono text-[#5B5048]">AM: 09:30–11:30 | PM: 14:00–16:00</span>
         </CardHeader>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px] bg-slate-50">
+              <tr className="border-b border-[#1E1915]/10 text-[#5B5048] font-mono uppercase text-[10px] bg-[#F3ECE2]">
                 <th className="py-3 px-3">Exam ID</th>
                 <th className="py-3 px-3">Slot</th>
                 <th className="py-3 px-3">Courses Included</th>
@@ -124,40 +124,40 @@ export const ExamsPage: React.FC = () => {
                 <th className="py-3 px-3 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-sans">
+            <tbody className="divide-y divide-[#1E1915]/10 font-sans">
               {exams.map((ex) => (
-                <tr key={ex.exam_id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="py-3 px-3 font-mono font-bold text-blue-700">{ex.exam_id}</td>
+                <tr key={ex.exam_id} className="hover:bg-[#F3ECE2]/50 transition-colors">
+                  <td className="py-3 px-3 font-mono font-bold text-[#A9502B]">{ex.exam_id}</td>
                   <td className="py-3 px-3 font-mono">
-                    <span className="font-bold text-slate-800">{ex.day}</span>{' '}
-                    <span className="text-blue-600 font-semibold">{ex.session}</span>
+                    <span className="font-bold text-[#1E1915]">{ex.day}</span>{' '}
+                    <span className="text-[#A9502B] font-semibold">{ex.session}</span>
                   </td>
-                  <td className="py-3 px-3 font-medium text-slate-800">{ex.course_ids.join(', ')}</td>
-                  <td className="py-3 px-3 text-slate-500">{ex.groups.join(', ')}</td>
-                  <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{ex.student_count}</td>
+                  <td className="py-3 px-3 font-medium text-[#1E1915]">{ex.course_ids.join(', ')}</td>
+                  <td className="py-3 px-3 text-[#5B5048]">{ex.groups.join(', ')}</td>
+                  <td className="py-3 px-3 text-right font-mono font-bold text-[#1E1915]">{ex.student_count}</td>
                   <td className="py-3 px-3">
                     <div className="flex flex-wrap gap-1">
                       {ex.assigned_rooms.map((r) => (
                         <span
                           key={r.room_id}
-                          className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono text-[10px]"
+                          className="px-2 py-0.5 rounded bg-[#F3ECE2] text-[#5B5048] border border-[#1E1915]/10 font-mono text-[10px]"
                         >
                           {r.name} ({r.effective_exam_capacity} seats)
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-right font-mono font-bold text-emerald-700">
+                  <td className="py-3 px-3 text-right font-mono font-bold text-emerald-800">
                     {ex.total_effective_seats}
                   </td>
                   <td className="py-3 px-3 text-center">
                     {ex.capacity_valid ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        <CheckCircle2 className="h-3 w-3" /> Valid
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-950/10 px-2 py-0.5 rounded-full border border-emerald-300">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-700" /> Valid
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                        <AlertCircle className="h-3 w-3" /> Insufficient
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-800 bg-rose-950/10 px-2 py-0.5 rounded-full border border-rose-300">
+                        <AlertCircle className="h-3 w-3 text-rose-700" /> Insufficient
                       </span>
                     )}
                   </td>

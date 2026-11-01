@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.core.config import settings
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "tech_zephyr.db"
@@ -31,11 +31,33 @@ def init_db():
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         full_name TEXT NOT NULL,
-        role TEXT NOT NULL, -- admin, coordinator, faculty, club
+        role TEXT NOT NULL, -- admin, coordinator, faculty, club, student
         department TEXT,
+        registration_no TEXT,
         created_at TEXT NOT NULL
     );
     """)
+
+    # Ensure registration_no column exists in existing databases
+    cursor.execute("PRAGMA table_info(users)")
+    existing_user_cols = [row["name"] for row in cursor.fetchall()]
+    if "registration_no" not in existing_user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN registration_no TEXT;")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_registration_no ON users(registration_no) WHERE registration_no IS NOT NULL;")
+
+    # 1.1 Password Reset Tokens table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used_at TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_pwd_reset_token_hash ON password_reset_tokens(token_hash);")
 
     # 2. Bookings table
     cursor.execute("""
@@ -138,7 +160,7 @@ def init_db():
 
 
 def seed_demo_users(conn: sqlite3.Connection):
-    """Seed the 4 required role accounts with known passwords."""
+    """Seed and verify the 4 required role accounts with known passwords."""
     cursor = conn.cursor()
     users = [
         ("admin@cit.edu", "Admin@123", "Dr. Rajeshwar Jena (Dean & Chief Admin)", "admin", "ADMIN"),
@@ -149,13 +171,23 @@ def seed_demo_users(conn: sqlite3.Connection):
 
     now = datetime.now(timezone.utc).isoformat()
     for email, pwd, name, role, dept in users:
-        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT id, password_hash, role FROM users WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        if not row:
             pwd_hash = hash_password(pwd)
             cursor.execute(
                 "INSERT INTO users (email, password_hash, full_name, role, department, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                 (email, pwd_hash, name, role, dept, now)
             )
+        else:
+            user_id, current_hash, current_role = row
+            # Ensure demo account credentials and roles are strictly valid
+            if not verify_password(pwd, current_hash) or current_role != role:
+                new_hash = hash_password(pwd)
+                cursor.execute(
+                    "UPDATE users SET password_hash = ?, role = ?, full_name = ?, department = ? WHERE id = ?",
+                    (new_hash, role, name, dept, user_id)
+                )
     conn.commit()
 
 

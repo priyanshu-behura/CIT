@@ -33,39 +33,57 @@ DAYS_ENGLISH_HINGLISH = {
     "saturday": "SAT", "shaniwar": "SAT", "sat": "SAT"
 }
 
+# Sorted by key length descending so longer, more specific room phrases match first
 ROOM_TYPE_KEYWORDS = {
+    "computing lab 1": ("lab_cs", "CS-LAB-1"),
+    "computing lab 2": ("lab_cs", "CS-LAB-2"),
+    "computing lab": ("lab_cs", "CS-LAB-1"),
+    "lab with computers": ("lab_cs", "CS-LAB-1"),
+    "cs lab 1": ("lab_cs", "CS-LAB-1"),
+    "cs lab 2": ("lab_cs", "CS-LAB-2"),
+    "cs lab": ("lab_cs", "CS-LAB-1"),
+    "computer lab": ("lab_cs", "CS-LAB-1"),
+    "seminar hall 1": ("seminar_hall", "SH-1"),
+    "seminar hall 2": ("seminar_hall", "SH-2"),
+    "seminar hall": ("seminar_hall", "SH-1"),
+    "seminar": ("seminar_hall", "SH-1"),
+    "lecture hall 1": ("lecture_hall", "LH-1"),
+    "lecture hall 2": ("lecture_hall", "LH-2"),
+    "lecture hall 3": ("lecture_hall", "LH-3"),
+    "lecture hall": ("lecture_hall", "LH-1"),
+    "lh-1": ("lecture_hall", "LH-1"),
+    "lh-2": ("lecture_hall", "LH-2"),
+    "lh-3": ("lecture_hall", "LH-3"),
+    "lh": ("lecture_hall", "LH-1"),
     "auditorium": ("auditorium", "AUD"),
     "audi": ("auditorium", "AUD"),
-    "seminar": ("seminar_hall", "SH-1"),
-    "seminar hall": ("seminar_hall", "SH-1"),
-    "lecture hall": ("lecture_hall", "LH-1"),
-    "lh": ("lecture_hall", "LH-1"),
+    "open air theatre": ("outdoor", "OAT"),
+    "oat": ("outdoor", "OAT"),
+    "electronics lab": ("lab_elec", "ELEC-LAB-1"),
     "classroom": ("classroom", "CR-101"),
     "class": ("classroom", "CR-101"),
     "cr": ("classroom", "CR-101"),
-    "computing lab": ("lab_cs", "CS-LAB-1"),
-    "lab with computers": ("lab_cs", "CS-LAB-1"),
-    "cs lab": ("lab_cs", "CS-LAB-1"),
-    "computer lab": ("lab_cs", "CS-LAB-1"),
-    "lab": ("lab_cs", "CS-LAB-1"),
-    "electronics lab": ("lab_elec", "ELEC-LAB-1"),
     "workshop": ("workshop", "MECH-WS"),
-    "open air theatre": ("outdoor", "OAT"),
-    "oat": ("outdoor", "OAT")
+    "lab": ("lab_cs", "CS-LAB-1")
 }
 
+# Sorted by specificity
 CATEGORY_KEYWORDS = {
+    "python bootcamp": ("club_event", "Python Bootcamp"),
+    "robotics workshop": ("club_event", "Robotics Workshop"),
     "robotics": ("club_event", "Robotics Workshop"),
-    "cultural": ("club_event", "Cultural Fest / Event"),
-    "hackathon": ("club_event", "Tech Hackathon"),
+    "cultural event": ("club_event", "Cultural Event"),
+    "cultural fest": ("club_event", "Cultural Fest"),
+    "cultural": ("club_event", "Cultural Event"),
     "guest lecture": ("guest_lecture", "Distinguished Guest Lecture"),
+    "hackathon": ("club_event", "Tech Hackathon"),
     "symposium": ("department_event", "Department Academic Symposium"),
     "meeting": ("department_event", "Faculty & Staff Meeting"),
     "convocation": ("institute_event", "Annual Institute Convocation"),
     "orientation": ("institute_event", "Student Orientation Program"),
     "quiz": ("club_event", "Inter-College Quiz Competition"),
-    "workshop": ("club_event", "Hands-on Technical Workshop"),
-    "bootcamp": ("club_event", "Student Coding Bootcamp")
+    "bootcamp": ("club_event", "Student Coding Bootcamp"),
+    "workshop": ("club_event", "Hands-on Technical Workshop")
 }
 
 
@@ -81,6 +99,7 @@ class NLPBookingService:
         - Unknown rooms ('Hall 999', 'Room 5000') trigger clear room-not-found messages with valid alternatives.
         - Invalid times (< 08:00 or > 22:00) request a valid window and never silently default.
         - Room codes (CR-101, SH-1, LH-2) are never parsed as attendance.
+        - Attendance is NEVER silently defaulted to 60 or 150; if missing, returns None with needs_input=True.
         - User reviews and confirms the resulting draft in the UI before submission.
         """
         text_lower = text.lower()
@@ -106,15 +125,15 @@ class NLPBookingService:
 
         DAY_MAP_INDEX = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
-        extracted = {
+        extracted: Dict[str, Any] = {
             "title": "Campus Event",
             "category": "club_event",
-            "day": "MON",
-            "start_period": 6,
-            "end_period": 8,
-            "attendance": 60,
-            "room_types": ["classroom"],
-            "preferred_room_id": "CR-101",
+            "day": None,
+            "start_period": None,
+            "end_period": None,
+            "attendance": None,
+            "room_types": [],
+            "preferred_room_id": None,
             "needs": ["projector", "ac"],
             "needs_accessible": False,
             "confidence": 0.85,
@@ -211,6 +230,7 @@ class NLPBookingService:
                 day_found = True
 
         if not day_found:
+            extracted["day"] = None
             missing_fields.append("day")
             needs_input_fields.append("day")
             follow_up_questions.append("Which day would you like to schedule this event? (e.g. Monday-Saturday / Somwar-Shaniwar)")
@@ -257,6 +277,13 @@ class NLPBookingService:
                     start_mer = "pm"
                 elif not start_mer and end_mer == "am":
                     start_mer = "am"
+
+                # Check if e.g. 10 to 1 means 10 AM to 1 PM
+                if start_hr >= 8 and start_hr <= 11 and end_hr >= 1 and end_hr <= 5:
+                    if not start_mer:
+                        start_mer = "am"
+                    if not end_mer:
+                        end_mer = "pm"
 
                 if start_mer == "pm" and start_hr < 12:
                     start_hr += 12
@@ -338,6 +365,8 @@ class NLPBookingService:
                     time_found = True
 
         if not time_found:
+            extracted["start_period"] = None
+            extracted["end_period"] = None
             missing_fields.append("time")
             needs_input_fields.append("time")
             follow_up_questions.append("What time or periods do you need? (e.g. 2 PM to 5 PM, Morning P2-P4, Evening P10-P12)")
@@ -345,7 +374,6 @@ class NLPBookingService:
         # -------------------------------------------------------------
         # 3. Attendance Extraction (Cleaned of Room Codes like CR-101, SH-1)
         # -------------------------------------------------------------
-        # Strip room codes and course codes before checking attendance numbers
         text_without_codes = re.sub(r"\b[A-Za-z]{1,4}-\d{1,4}[a-z]?\b", " ", text_lower)
         text_without_codes = re.sub(r"\bhall\s+\d{1,4}\b", " ", text_without_codes)
         text_without_codes = re.sub(r"\broom\s+\d{1,4}\b", " ", text_without_codes)
@@ -393,9 +421,10 @@ class NLPBookingService:
                     att_found = True
 
         if not att_found:
+            extracted["attendance"] = None
             missing_fields.append("attendance")
             needs_input_fields.append("attendance")
-            follow_up_questions.append("Approximately how many attendees or students will attend?")
+            follow_up_questions.append("Approximately how many attendees or students will attend? (Attendance is required)")
 
         # -------------------------------------------------------------
         # 4. Room Type & Preferred Room (With Unknown Room Detection)
@@ -451,13 +480,15 @@ class NLPBookingService:
                     break
 
         if not venue_found:
-            if extracted.get("attendance", 0) > 100:
+            if extracted.get("attendance") and extracted.get("attendance", 0) > 100:
                 extracted["room_types"] = ["lecture_hall", "auditorium"]
                 extracted["preferred_room_id"] = "LH-1"
                 extracted["extracted_fields"].append("Room: Large Venue (LH/AUD based on attendance > 100)")
                 extracted_field_keys.add("venue")
                 venue_found = True
             else:
+                extracted["preferred_room_id"] = None
+                extracted["room_types"] = []
                 missing_fields.append("venue")
                 needs_input_fields.append("venue")
                 follow_up_questions.append("What type of venue do you require? (e.g. Auditorium, Seminar Hall, Classroom, CS Lab, Open Air Theatre)")
@@ -470,6 +501,7 @@ class NLPBookingService:
                 extracted["category"] = cat
                 extracted["title"] = default_title
                 extracted["extracted_fields"].append(f"Category: {cat}")
+                extracted["extracted_fields"].append(f"Title: {default_title}")
                 break
 
         # Check for explicitly quoted or titled topics
@@ -478,12 +510,24 @@ class NLPBookingService:
             extracted["title"] = title_match.group(1).title()
             extracted["extracted_fields"].append(f"Title: {extracted['title']}")
         else:
-            # Check for workshop / event names
+            # Check for workshop / event names like "for Python bootcamp with 60 students"
             event_match = re.search(r"for\s+([a-zA-Z\s]{3,25})\s+(?:workshop|event|meeting|fest|lecture|bootcamp)", text_lower)
             if event_match:
                 candidate = f"{event_match.group(1).strip().title()} {event_match.group(0).split()[-1].title()}"
                 extracted["title"] = candidate
-                extracted["extracted_fields"].append(f"Title: {candidate}")
+                if not any(f.startswith("Title:") for f in extracted["extracted_fields"]):
+                    extracted["extracted_fields"].append(f"Title: {candidate}")
+
+        # Fallback Title if still generic
+        if extracted["title"] == "Campus Event":
+            if "classroom" in text_lower or "cr-" in text_lower:
+                extracted["title"] = "Classroom Booking"
+            elif "auditorium" in text_lower or "aud" in text_lower:
+                extracted["title"] = "Auditorium Event"
+            elif "seminar" in text_lower:
+                extracted["title"] = "Seminar Hall Session"
+            elif "computing lab" in text_lower or "lab" in text_lower:
+                extracted["title"] = "Lab Booking"
 
         # -------------------------------------------------------------
         # 6. Needs / Features
@@ -495,15 +539,23 @@ class NLPBookingService:
             needs.append("ac")
         if any(w in text_lower for w in ["mic", "pa", "sound", "speaker", "sound system"]):
             needs.append("pa_system")
-        if any(w in text_lower for w in ["computer", "pc", "system", "lab with computers"]):
+        if any(w in text_lower for w in ["computer", "pc", "system", "computing lab", "lab_cs"]):
             needs.append("computers")
         if any(w in text_lower for w in ["wheelchair", "accessible", "ramps"]):
             extracted["needs_accessible"] = True
             extracted["extracted_fields"].append("Accessibility: Wheelchair accessible")
 
-        if needs:
-            extracted["needs"] = needs
-            extracted["extracted_fields"].append(f"Needs: {', '.join(needs)}")
+        if not needs:
+            # Sensible defaults based on room type
+            if "lab_cs" in extracted.get("room_types", []):
+                needs = ["computers", "projector"]
+            elif "auditorium" in extracted.get("room_types", []):
+                needs = ["projector", "ac", "pa_system"]
+            else:
+                needs = ["projector", "ac"]
+
+        extracted["needs"] = needs
+        extracted["extracted_fields"].append(f"Needs: {', '.join(needs)}")
 
         # Calculate final confidence and honesty flags
         extracted["missing_fields"] = missing_fields
@@ -518,4 +570,3 @@ class NLPBookingService:
 
 
 nlp_booking_service = NLPBookingService()
-

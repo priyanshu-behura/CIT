@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { StarBorder } from '../components/ui/StarBorder';
 import { api } from '../services/api';
 import type { DisruptionRecord, DisruptionDiff, User } from '../types/dataset';
 
@@ -117,23 +118,23 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Disruption Management & Rescheduling</h2>
-            <Badge variant="warning">Minimum-Movement Optimization</Badge>
+            <h2 className="text-xl font-bold font-serif text-[#1E1915] tracking-tight">Disruption Management & Rescheduling</h2>
+            <Badge variant="terracotta">Minimum-Movement Optimization</Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5B5048] mt-1">
             Simulate faculty sudden leave, room closure repairs, or new curriculum sessions without cascading campus chaos.
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-          <span className="font-bold flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-amber-600" />
+        <div className="p-3.5 rounded-xl bg-[#A9502B]/10 border border-[#A9502B]/20 text-xs text-[#1E1915]">
+          <span className="font-bold flex items-center gap-1.5 text-[#1E1915]">
+            <ShieldCheck className="h-4 w-4 text-[#A9502B]" />
             Admin Approval Mandatory
           </span>
-          <p className="text-[11px] text-amber-700 mt-0.5">
+          <p className="text-[11px] text-[#5B5048] mt-0.5">
             Simulations remain proposals until an authorized Administrator commits them.
           </p>
         </div>
@@ -178,17 +179,17 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4 text-blue-600" />
+            <Upload className="h-4 w-4 text-[#A9502B]" />
             <CardTitle>Upload Disruption Scenario (.json)</CardTitle>
           </div>
           <CardDescription>
             Upload a custom scenario JSON (e.g., sample_disruption.json) to simulate minimal-movement rescheduling before administrative approval.
           </CardDescription>
         </CardHeader>
-        <div className="p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 hover:bg-blue-50/20 hover:border-blue-400 transition-colors flex flex-col items-center justify-center text-center gap-2">
-          <FileCode className="h-8 w-8 text-slate-400" />
+        <div className="p-4 rounded-xl border border-dashed border-[#1E1915]/20 bg-[#F3ECE2]/40 hover:bg-[#A9502B]/5 hover:border-[#A9502B]/40 transition-colors flex flex-col items-center justify-center text-center gap-2">
+          <FileCode className="h-8 w-8 text-[#5B5048]" />
           <div>
-            <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2">
+            <label className="cursor-pointer text-xs font-bold text-[#A9502B] hover:text-[#8F3F1E] underline underline-offset-2">
               <span>{isUploading ? 'Validating Scenario...' : 'Select JSON Disruption File'}</span>
               <input
                 type="file"
@@ -198,9 +199,9 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
                 onChange={handleFileUpload}
               />
             </label>
-            <span className="text-slate-500 text-xs"> or drag and drop here</span>
+            <span className="text-[#5B5048] text-xs"> or drag and drop here</span>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-[#5B5048]/70">
             Accepts official competition format: faculty leaves, room closures, or added curriculum sessions (Max 1 MB)
           </p>
         </div>
@@ -217,7 +218,7 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
             <button
               onClick={handleSimulate}
               disabled={isSimulating}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#A9502B] hover:bg-[#8F3F1E] text-[#F3ECE2] text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
             >
               <Play className="h-3.5 w-3.5" />
               <span>{isSimulating ? 'Running OR-Tools Minimization...' : 'Simulate Rescheduling'}</span>
@@ -232,19 +233,19 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
               onClick={() => setSelectedDisruption(dis)}
               className={`p-4 rounded-xl border text-xs cursor-pointer transition-all space-y-2 ${
                 selectedDisruption?.id === dis.id
-                  ? 'bg-blue-50/60 border-blue-400 shadow-sm'
-                  : 'bg-slate-50 border-slate-200 hover:bg-white'
+                  ? 'bg-[#A9502B]/10 border-[#A9502B]/40 shadow-sm'
+                  : 'bg-[#F3ECE2]/40 border-[#1E1915]/10 hover:bg-[#F3ECE2]/80'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono font-bold text-blue-700">{dis.id}</span>
+                <span className="font-mono font-bold text-[#A9502B]">{dis.id}</span>
                 <Badge variant={dis.status === 'applied' ? 'success' : 'warning'} size="sm">
                   {dis.status}
                 </Badge>
               </div>
-              <h4 className="font-bold text-slate-900">{dis.title}</h4>
-              <p className="text-slate-500 text-[11px] leading-relaxed">{dis.description}</p>
-              <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400 font-mono">
+              <h4 className="font-bold text-[#1E1915]">{dis.title}</h4>
+              <p className="text-[#5B5048] text-[11px] leading-relaxed">{dis.description}</p>
+              <div className="pt-2 border-t border-[#1E1915]/10 text-[10px] text-[#5B5048]/70 font-mono">
                 {dis.changes.length} Changes (Faculty Unavailable + Room Maintenance + New Session)
               </div>
             </div>
@@ -254,7 +255,7 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
 
       {/* Infeasible Simulation Diagnostic Alert */}
       {simulationResult && simulationResult.status === 'infeasible' && (
-        <div className="p-6 rounded-2xl bg-amber-50/80 border border-amber-300 shadow-sm space-y-4 animate-in fade-in duration-200">
+        <div className="p-6 rounded-2xl bg-[#FBF8F3] border border-amber-300 shadow-sm space-y-4 animate-in fade-in duration-200">
           <div className="flex items-start gap-3.5">
             <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 shrink-0 mt-0.5">
               <AlertTriangle className="h-6 w-6" />
@@ -271,8 +272,8 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
-              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+            <div className="p-3.5 rounded-xl bg-[#F3ECE2]/60 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-[#1E1915] uppercase tracking-wider text-[10px] block">
                 Dominant Blocking Constraints
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -280,29 +281,29 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
                   <span key={c} className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-mono text-[11px] font-semibold">
                     {c.replace(/_/g, ' ')}
                   </span>
-                )) || <span className="text-slate-400">None detected</span>}
+                )) || <span className="text-[#5B5048]">None detected</span>}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
-              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+            <div className="p-3.5 rounded-xl bg-[#F3ECE2]/60 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-[#1E1915] uppercase tracking-wider text-[10px] block">
                 Safeguards & Active Schedule Status
               </span>
-              <p className="text-[11px] text-slate-600">
+              <p className="text-[11px] text-[#5B5048]">
                 <span className="font-bold text-emerald-700">&#10003; Baseline schedule untouched:</span> No partial changes committed to active timetable or disk exports.
               </p>
             </div>
           </div>
 
           {simulationResult.candidate_elimination_counts && (
-            <div className="p-3.5 rounded-xl bg-white/80 border border-amber-200 text-xs space-y-2">
-              <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+            <div className="p-3.5 rounded-xl bg-[#F3ECE2]/60 border border-amber-200 text-xs space-y-2">
+              <span className="font-bold text-[#1E1915] uppercase tracking-wider text-[10px] block">
                 Deterministic Constraint-Elimination Breakdown (Evaluated Candidate Slots)
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-[11px] font-mono">
                 {Object.entries(simulationResult.candidate_elimination_counts).map(([k, v]) => (
-                  <div key={k} className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
-                    <span className="text-slate-600 truncate pr-1">{k.replace(/_/g, ' ')}</span>
+                  <div key={k} className="p-2 rounded-lg bg-[#FBF8F3] border border-[#1E1915]/10 flex items-center justify-between">
+                    <span className="text-[#5B5048] truncate pr-1">{k.replace(/_/g, ' ')}</span>
                     <span className="font-bold text-amber-700">{v as number}</span>
                   </div>
                 ))}
@@ -317,36 +318,36 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Stability Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-xl bg-white border border-slate-200 text-center space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Sessions Moved</span>
-              <span className="text-3xl font-extrabold text-blue-600 font-mono">
+            <div className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 text-center space-y-1">
+              <span className="text-xs font-bold text-[#5B5048] uppercase tracking-wider block">Sessions Moved</span>
+              <span className="text-3xl font-extrabold text-[#A9502B] font-mono">
                 {simulationResult.stability?.sessions_moved || simulationResult.session_diffs?.length || 0}
               </span>
-              <p className="text-[10px] text-slate-500">Minimal displacement</p>
+              <p className="text-[10px] text-[#5B5048]">Minimal displacement</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white border border-slate-200 text-center space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Time Changed</span>
-              <span className="text-3xl font-extrabold text-amber-600 font-mono">
+            <div className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 text-center space-y-1">
+              <span className="text-xs font-bold text-[#5B5048] uppercase tracking-wider block">Time Changed</span>
+              <span className="text-3xl font-extrabold text-[#C8693F] font-mono">
                 {simulationResult.stability?.time_changed || 0}
               </span>
-              <p className="text-[10px] text-slate-500">Day or period shift</p>
+              <p className="text-[10px] text-[#5B5048]">Day or period shift</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white border border-slate-200 text-center space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Room Only Changed</span>
-              <span className="text-3xl font-extrabold text-cyan-600 font-mono">
+            <div className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 text-center space-y-1">
+              <span className="text-xs font-bold text-[#5B5048] uppercase tracking-wider block">Room Only Changed</span>
+              <span className="text-3xl font-extrabold text-[#243C50] font-mono">
                 {simulationResult.stability?.room_only_changed || 0}
               </span>
-              <p className="text-[10px] text-slate-500">Same time, new venue</p>
+              <p className="text-[10px] text-[#5B5048]">Same time, new venue</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white border border-slate-200 text-center space-y-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Hard Violations</span>
-              <span className="text-3xl font-extrabold text-emerald-600 font-mono">
+            <div className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 text-center space-y-1">
+              <span className="text-xs font-bold text-[#5B5048] uppercase tracking-wider block">Hard Violations</span>
+              <span className="text-3xl font-extrabold text-emerald-700 font-mono">
                 {simulationResult.hard_violations}
               </span>
-              <p className="text-[10px] text-slate-500">Zero constraint breaches</p>
+              <p className="text-[10px] text-[#5B5048]">Zero constraint breaches</p>
             </div>
           </div>
 
@@ -359,13 +360,18 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
               </div>
 
               {isAdmin ? (
-                <button
+                <StarBorder
+                  as="button"
                   onClick={handleApprove}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm"
+                  radius={12}
+                  color="#243C50"
+                  trailColor="#A9502B"
+                  theme="dark"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#243C50] hover:bg-[#1A2C3B] text-[#F3ECE2] font-semibold text-xs shadow-sm"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Approve & Commit Revised Timetable</span>
-                </button>
+                </StarBorder>
               ) : (
                 <span className="text-xs text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
                   Admin authority required to commit
@@ -376,7 +382,7 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px] bg-slate-50">
+                  <tr className="border-b border-[#1E1915]/10 text-[#5B5048] font-mono uppercase text-[10px] bg-[#F3ECE2]/60">
                     <th className="py-3 px-3">Session</th>
                     <th className="py-3 px-3">Faculty & Cohorts</th>
                     <th className="py-3 px-3">Movement Type</th>
@@ -385,37 +391,37 @@ export const DisruptionsPage: React.FC<DisruptionsPageProps> = ({ user }) => {
                     <th className="py-3 px-3">Proposed Revised Slot</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-sans">
+                <tbody className="divide-y divide-[#1E1915]/5 font-sans">
                   {simulationResult.session_diffs?.map((diff: DisruptionDiff) => (
-                    <tr key={diff.session_id} className="hover:bg-slate-50">
+                    <tr key={diff.session_id} className="hover:bg-[#F3ECE2]/40">
                       <td className="py-3 px-3">
-                        <span className="font-mono font-bold text-blue-700 block">{diff.session_id}</span>
-                        <span className="text-[11px] text-slate-500">{diff.course_id} ({diff.kind})</span>
+                        <span className="font-mono font-bold text-[#A9502B] block">{diff.session_id}</span>
+                        <span className="text-[11px] text-[#5B5048]">{diff.course_id} ({diff.kind})</span>
                       </td>
-                      <td className="py-3 px-3 text-slate-600">
-                        <div className="font-medium text-slate-800">{diff.faculty_id}</div>
-                        <span className="text-[10px] text-slate-400">{diff.groups.join(', ')}</span>
+                      <td className="py-3 px-3 text-[#5B5048]">
+                        <div className="font-medium text-[#1E1915]">{diff.faculty_id}</div>
+                        <span className="text-[10px] text-[#5B5048]/70">{diff.groups.join(', ')}</span>
                       </td>
                       <td className="py-3 px-3">
                         <Badge
                           variant={
-                            diff.change_type === 'room_only' ? 'cyan' :
+                            diff.change_type === 'room_only' ? 'academic' :
                             diff.change_type === 'time_only' ? 'warning' :
-                            diff.change_type === 'new_session' ? 'success' : 'purple'
+                            diff.change_type === 'new_session' ? 'success' : 'terracotta'
                           }
                           size="sm"
                         >
                           {diff.change_type.replace('_', ' ')}
                         </Badge>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-500">
+                      <td className="py-3 px-3 font-mono text-[#5B5048]">
                         {diff.before ? (
                           <span>{diff.before.day} P{diff.before.start_period} &middot; {diff.before.room_id}</span>
                         ) : (
-                          <span className="text-slate-400 italic">Unscheduled (New)</span>
+                          <span className="text-[#5B5048]/50 italic">Unscheduled (New)</span>
                         )}
                       </td>
-                      <td className="py-3 px-1 text-slate-400">
+                      <td className="py-3 px-1 text-[#5B5048]/50">
                         <ArrowRight className="h-3.5 w-3.5" />
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-emerald-700">

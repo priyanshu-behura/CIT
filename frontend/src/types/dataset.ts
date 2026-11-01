@@ -145,8 +145,14 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
-  role: 'admin' | 'coordinator' | 'faculty' | 'club';
+  role: 'admin' | 'coordinator' | 'faculty' | 'club' | 'student';
   department?: string;
+  registration_no?: string;
+}
+
+export interface DepartmentItem {
+  code: string;
+  name: string;
 }
 
 export interface DemoAccount {

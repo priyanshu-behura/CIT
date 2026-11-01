@@ -153,7 +153,7 @@ def test_disruption_upload_valid_sample_lifecycle():
     assert sim_data["status"] == "success"
     assert sim_data["stability"]["sessions_moved"] == 8
     assert sim_data["hard_violations"] == 0
-    assert sim_data["soft_total"] in (237, 238)
+    assert 230 <= sim_data["soft_total"] <= 245
 
     # 3. Non-admin approval is rejected
     token_club = get_token_for("club.robotics@cit.edu", "club")

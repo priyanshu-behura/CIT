@@ -4,53 +4,220 @@
 
 @layer base {
   :root {
-    --background: 220 100% 98%;   /* #F5F8FF */
-    --foreground: 222 47% 15%;    /* #172033 */
-    --card: 0 0% 100%;            /* #FFFFFF */
-    --card-foreground: 222 47% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 15%;
-    --primary: 221 83% 53%;       /* #2563EB */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 214 32% 91%;     /* #E2E8F0 */
-    --secondary-foreground: 222 47% 15%;
-    --muted: 214 32% 95%;
-    --muted-foreground: 215 16% 47%; /* #64748B */
-    --accent: 188 95% 43%;        /* #06B6D4 */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;     /* #DC2626 */
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;        /* #E2E8F0 */
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    /* CIT Master Color Palette */
+    --cit-bg: #F3ECE2;
+    --cit-surface: #FBF8F3;
+    --cit-text-primary: #1E1915;
+    --cit-text-secondary: #5B5048;
+    --cit-accent-primary: #A9502B;
+    --cit-accent-primary-hover: #8F3F1E;
+    --cit-accent-secondary: #C8693F;
+    --cit-academic-blue: #243C50;
+    --cit-academic-blue-hover: #1B2E3D;
+    --cit-dark: #191513;
+    --cit-light: #F3ECE2;
+    --cit-border: rgba(30, 25, 21, 0.12);
+    --cit-border-subtle: rgba(30, 25, 21, 0.08);
+    --cit-border-dark: rgba(243, 236, 226, 0.14);
+
+    /* UI Framework Tokens (Aligned to CIT Master Palette) */
+    --background: #F3ECE2;
+    --foreground: #1E1915;
+    --card: #FBF8F3;
+    --card-foreground: #1E1915;
+    --popover: #FBF8F3;
+    --popover-foreground: #1E1915;
+    --primary: #A9502B;
+    --primary-foreground: #F3ECE2;
+    --secondary: #243C50;
+    --secondary-foreground: #F3ECE2;
+    --muted: #EAE2D7;
+    --muted-foreground: #5B5048;
+    --accent: #A9502B;
+    --accent-foreground: #F3ECE2;
+    --destructive: #B91C1C;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(30, 25, 21, 0.12);
+    --input: rgba(30, 25, 21, 0.16);
+    --ring: #A9502B;
     --radius: 0.75rem;
   }
 
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: #F5F8FF;
-    color: #172033;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F3ECE2;
+    color: #1E1915;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
     margin: 0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 }
 
-/* Crisp professional scrollbar */
+/* Warm CIT Editorial scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #EAE2D7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #D5C8B8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #A9502B;
 }
+
+/* CIT Luxury Editorial Design System (Halcyon Transformation) */
+.cit {
+  --cit-bg: #F3ECE2;
+  --cit-surface: #FBF8F3;
+  --cit-text-primary: #1E1915;
+  --cit-text-secondary: #5B5048;
+  --cit-accent-primary: #A9502B;
+  --cit-accent-secondary: #C8693F;
+  --cit-academic-blue: #243C50;
+  --cit-dark: #191513;
+  --cit-light: #F3ECE2;
+  --cit-border: rgba(30, 25, 21, 0.14);
+  --cit-border-dark: rgba(243, 236, 226, 0.14);
+
+  --fd-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --fd-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --fd-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+  color: #1E1915;
+  background-color: #F3ECE2;
+}
+
+.cit-ease-out {
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-ease-in-out {
+  transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.cit-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cit .font-serif {
+  font-family: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+.cit .font-sans {
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+}
+
+.cit .cit-dropcap::first-letter {
+  font-family: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 3.75rem;
+  line-height: 0.85;
+  float: left;
+  margin-right: 0.75rem;
+  margin-top: 0.25rem;
+  color: #A9502B;
+  font-weight: 600;
+}
+
+/* Centralized CIT Component Utility Classes */
+.cit-card {
+  background-color: var(--cit-surface);
+  border: 1px solid var(--cit-border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(30, 25, 21, 0.05);
+}
+
+.cit-btn-primary {
+  background-color: var(--cit-accent-primary);
+  color: var(--cit-light);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.cit-btn-primary:hover {
+  background-color: var(--cit-accent-primary-hover);
+}
+
+.cit-btn-secondary {
+  background-color: var(--cit-academic-blue);
+  color: var(--cit-light);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.cit-btn-secondary:hover {
+  background-color: var(--cit-academic-blue-hover);
+}
+
+.cit-input {
+  background-color: var(--cit-surface);
+  border: 1px solid var(--cit-input);
+  color: var(--cit-text-primary);
+  border-radius: 0.75rem;
+}
+.cit-input:focus {
+  outline: none;
+  border-color: var(--cit-accent-primary);
+  box-shadow: 0 0 0 2px rgba(169, 80, 43, 0.2);
+}
+
+.cit-scrim {
+  background: linear-gradient(
+    to right,
+    rgba(25, 21, 19, 0.84) 0%,
+    rgba(25, 21, 19, 0.68) 35%,
+    rgba(25, 21, 19, 0.38) 65%,
+    rgba(25, 21, 19, 0.12) 85%,
+    transparent 100%
+  );
+}
+
+@media (max-width: 768px) {
+  .cit-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgba(25, 21, 19, 0.82) 0%,
+      rgba(25, 21, 19, 0.65) 55%,
+      rgba(25, 21, 19, 0.4) 100%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cit * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Animated Top Dock */
+.cit-top-dock {
+  isolation: isolate;
+  overflow: visible;
+}
+
+.cit-top-dock [data-dock-item] {
+  transform-origin: 50% 50%;
+  will-change: transform, background-color, color;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.cit-top-dock [data-dock-item][data-dock-near="true"],
+.cit-top-dock [data-dock-item]:focus-visible {
+  z-index: 10;
+}
+

@@ -38,9 +38,23 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
     ]
 
+    # MongoDB Atlas Configuration
+    MONGODB_URI: str = "mongodb+srv://sumitkumarpanigrahi9278_db_user:aYJBPRXaRaIrSypT@cluster0.cnbjszh.mongodb.net/?retryWrites=true&w=majority"
+    MONGODB_DATABASE: str = "cit_campus"
+
     # LLM API Configuration
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+
+    # Email & SMTP Configuration for Password Reset
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@cit.edu"
+    SMTP_FROM_NAME: str = "Chilika Institute of Technology"
+    FRONTEND_URL: str = "http://localhost:5173"
+    APP_ENV: str = "development"
 
     model_config = SettingsConfigDict(
         env_file=(str(Path(__file__).resolve().parent.parent.parent / ".env"), ".env"),

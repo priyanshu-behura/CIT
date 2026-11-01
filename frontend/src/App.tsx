@@ -3,6 +3,9 @@ import { api, setToken } from './services/api';
 import type { User, DemoAccount, DatasetSummary, HealthStatus } from './types/dataset';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { TimetablePage } from './pages/TimetablePage';
@@ -19,6 +22,7 @@ import { SettingsPage } from './pages/SettingsPage';
 
 export const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>('landing');
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [summary, setSummary] = useState<DatasetSummary | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -26,6 +30,22 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Check URL parameters for direct deep-linking (e.g. ?page=reset-password&token=xyz or ?page=register)
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    const tokenParam = urlParams.get('token') || urlParams.get('reset_token');
+
+    if (pageParam === 'reset-password' || tokenParam) {
+      if (tokenParam) setResetToken(tokenParam);
+      setCurrentPage('reset-password');
+    } else if (pageParam === 'register') {
+      setCurrentPage('register');
+    } else if (pageParam === 'forgot-password') {
+      setCurrentPage('forgot-password');
+    } else if (pageParam === 'login') {
+      setCurrentPage('login');
+    }
+
     const initializeApp = async () => {
       setIsLoading(true);
       try {
@@ -45,8 +65,10 @@ export const App: React.FC = () => {
           try {
             const meRes = await api.getMe();
             setUser(meRes);
-            // If already logged in and on root, go to dashboard
-            setCurrentPage('dashboard');
+            // If already logged in and on root without explicit auth page parameter, go to dashboard
+            if (!pageParam || pageParam === 'login') {
+              setCurrentPage('dashboard');
+            }
           } catch {
             setToken(null);
           }
@@ -84,12 +106,43 @@ export const App: React.FC = () => {
     );
   }
 
-  // 2. AUTHENTICATION PAGE
+  // 2. AUTHENTICATION PAGES
   if (currentPage === 'login') {
     return (
       <LoginPage
         demoAccounts={demoAccounts}
         onLoginSuccess={handleLoginSuccess}
+        onNavigateLanding={() => setCurrentPage('landing')}
+        onNavigateRegister={() => setCurrentPage('register')}
+        onNavigateForgotPassword={() => setCurrentPage('forgot-password')}
+      />
+    );
+  }
+
+  if (currentPage === 'register') {
+    return (
+      <RegisterPage
+        onNavigateLogin={() => setCurrentPage('login')}
+        onNavigateLanding={() => setCurrentPage('landing')}
+      />
+    );
+  }
+
+  if (currentPage === 'forgot-password') {
+    return (
+      <ForgotPasswordPage
+        onNavigateLogin={() => setCurrentPage('login')}
+        onNavigateLanding={() => setCurrentPage('landing')}
+      />
+    );
+  }
+
+  if (currentPage === 'reset-password') {
+    return (
+      <ResetPasswordPage
+        token={resetToken}
+        onNavigateLogin={() => setCurrentPage('login')}
+        onNavigateForgotPassword={() => setCurrentPage('forgot-password')}
         onNavigateLanding={() => setCurrentPage('landing')}
       />
     );

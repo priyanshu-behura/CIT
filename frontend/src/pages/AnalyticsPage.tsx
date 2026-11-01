@@ -47,7 +47,7 @@ export const AnalyticsPage: React.FC = () => {
     loadAnalytics();
   }, []);
 
-  const COLORS = ['#2563EB', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const COLORS = ['#A9502B', '#243C50', '#C8693F', '#15803D', '#B45309', '#5B5048'];
 
   const statusPieData = data?.booking_stats?.by_status
     ? Object.entries(data.booking_stats.by_status).map(([name, value]) => ({
@@ -59,19 +59,19 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Campus Analytics & Workload</h2>
-            <Badge variant="cyan">Real Dataset Analytics</Badge>
+            <h2 className="text-xl font-bold font-serif text-[#1E1915] tracking-tight">Campus Analytics & Workload</h2>
+            <Badge variant="terracotta">Real Dataset Analytics</Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5B5048] mt-1">
             Quantitative analysis derived strictly from the active timetable and booking records.
           </p>
         </div>
 
-        <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-          Weekly Teaching Hours: <strong className="text-blue-700 font-mono font-bold">{data?.summary.weekly_teaching_hours || 243} hrs</strong>
+        <div className="px-4 py-2 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 text-xs text-[#5B5048]">
+          Weekly Teaching Hours: <strong className="text-[#A9502B] font-mono font-bold">{data?.summary.weekly_teaching_hours || 243} hrs</strong>
         </div>
       </div>
 
@@ -86,14 +86,14 @@ export const AnalyticsPage: React.FC = () => {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.room_utilization?.slice(0, 10) || []} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="room_id" tick={{ fill: '#64748B', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#64748B', fontSize: 11 }} unit="%" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(30, 25, 21, 0.08)" />
+                <XAxis dataKey="room_id" tick={{ fill: '#5B5048', fontSize: 11 }} />
+                <YAxis tick={{ fill: '#5B5048', fontSize: 11 }} unit="%" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+                  contentStyle={{ backgroundColor: '#FBF8F3', borderRadius: '12px', border: '1px solid rgba(30, 25, 21, 0.15)', color: '#1E1915', boxShadow: '0 4px 6px -1px rgba(30,25,21,0.06)' }}
                   formatter={(val: any) => [`${val}%`, 'Utilization']}
                 />
-                <Bar dataKey="utilization_percent" fill="#2563EB" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="utilization_percent" fill="#A9502B" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -108,14 +108,14 @@ export const AnalyticsPage: React.FC = () => {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.department_workload || []} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="department" tick={{ fill: '#64748B', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#64748B', fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(30, 25, 21, 0.08)" />
+                <XAxis dataKey="department" tick={{ fill: '#5B5048', fontSize: 11 }} />
+                <YAxis tick={{ fill: '#5B5048', fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0' }}
+                  contentStyle={{ backgroundColor: '#FBF8F3', borderRadius: '12px', border: '1px solid rgba(30, 25, 21, 0.15)', color: '#1E1915' }}
                   formatter={(val: any) => [`${val} hrs`, 'Total Teaching Hours']}
                 />
-                <Bar dataKey="total_teaching_hours" fill="#06B6D4" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="total_teaching_hours" fill="#243C50" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -133,14 +133,14 @@ export const AnalyticsPage: React.FC = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data?.period_distribution || []} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="period" tick={{ fill: '#64748B', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#64748B', fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(30, 25, 21, 0.08)" />
+                <XAxis dataKey="period" tick={{ fill: '#5B5048', fontSize: 11 }} />
+                <YAxis tick={{ fill: '#5B5048', fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0' }}
+                  contentStyle={{ backgroundColor: '#FBF8F3', borderRadius: '12px', border: '1px solid rgba(30, 25, 21, 0.15)', color: '#1E1915' }}
                   formatter={(val: any) => [`${val} sessions`, 'Concurrent Classes']}
                 />
-                <Line type="monotone" dataKey="sessions" stroke="#2563EB" strokeWidth={3} dot={{ r: 4, fill: '#2563EB' }} />
+                <Line type="monotone" dataKey="sessions" stroke="#A9502B" strokeWidth={3} dot={{ r: 4, fill: '#A9502B' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -169,14 +169,14 @@ export const AnalyticsPage: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: '#FBF8F3', borderRadius: '12px', border: '1px solid rgba(30, 25, 21, 0.15)', color: '#1E1915' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-xs text-slate-400">Loading booking statistics...</p>
+              <p className="text-xs text-[#5B5048]/60">Loading booking statistics...</p>
             )}
           </div>
-          <div className="flex flex-wrap justify-center gap-2 text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap justify-center gap-2 text-[10px] font-mono text-[#5B5048] pt-2 border-t border-[#1E1915]/10">
             {statusPieData.map((entry, idx) => (
               <span key={entry.name} className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />

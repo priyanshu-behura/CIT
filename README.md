@@ -1,6 +1,6 @@
 # Campus Scheduling and Venue Management Platform for Chilika Institute of Technology (CIT)
 
-**Team:** Tech Zephyr 4.0 | **Institution:** Chilika Institute of Technology (CIT)
+**Team:** CodeXTech | **Institution:** Chilika Institute of Technology (CIT)
 
 This platform is a complete, production-grade academic scheduling, timetable optimization, venue management, and disruption recovery system engineered for the **Chilika Institute of Technology (CIT)** dataset during CrunchWeek.
 

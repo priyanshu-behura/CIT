@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { StarBorder } from '../components/ui/StarBorder';
 import { api } from '../services/api';
 import type { DetailedSession, DatasetSummary } from '../types/dataset';
 
@@ -166,30 +167,34 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
   return (
     <div className="space-y-6">
       {/* Control & Solver Action Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-5 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Academic Timetable Viewer</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-lg font-serif font-bold text-[#1E1915] tracking-tight">Academic Timetable Viewer</h2>
+            <p className="text-xs text-[#5B5048]">
               Monday–Friday &middot; Periods P1–P9 (08:00–18:00) &middot; Lunch strictly respected between P5 and P6
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
+            <StarBorder
+              as="button"
               onClick={handleGenerate}
               disabled={isSolving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+              radius={12}
+              color="#C8693F"
+              trailColor="#A9502B"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#A9502B] hover:bg-[#8F3F1E] text-[#F3ECE2] text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
             >
               <Play className="h-3.5 w-3.5" />
               <span>{isSolving ? 'Solving OR-Tools CP-SAT...' : 'Generate Schedule'}</span>
-            </button>
+            </StarBorder>
 
             <button
               onClick={handleValidate}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/15 hover:bg-[#F3ECE2] text-[#1E1915] text-xs font-semibold shadow-2xs transition-all"
             >
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <ShieldCheck className="h-4 w-4 text-emerald-700" />
               <span>Run validator.py</span>
             </button>
 
@@ -197,7 +202,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
               href="/api/v1/export/schedule.json"
               target="_blank"
               download
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#F3ECE2] hover:bg-[#F3ECE2]/80 text-[#5B5048] text-xs font-semibold transition-all border border-[#1E1915]/10"
             >
               <Download className="h-3.5 w-3.5" />
               <span>JSON</span>
@@ -207,7 +212,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
               href="/api/v1/export/timetable.csv"
               target="_blank"
               download
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#F3ECE2] hover:bg-[#F3ECE2]/80 text-[#5B5048] text-xs font-semibold transition-all border border-[#1E1915]/10"
             >
               <Download className="h-3.5 w-3.5" />
               <span>CSV</span>
@@ -217,23 +222,23 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
 
         {/* Background Solver Progress Card */}
         {jobState.status === 'running' && (
-          <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 text-xs space-y-2.5">
-            <div className="flex items-center justify-between text-blue-900 font-semibold">
+          <div className="p-4 rounded-xl bg-[#A9502B]/10 border border-[#A9502B]/20 text-xs space-y-2.5">
+            <div className="flex items-center justify-between text-[#A9502B] font-semibold">
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                <Loader2 className="h-4 w-4 text-[#A9502B] animate-spin" />
                 <span>Background Timetable Generation in Progress...</span>
               </div>
-              <span className="font-mono text-blue-700">{jobState.progress}%</span>
+              <span className="font-mono text-[#A9502B]">{jobState.progress}%</span>
             </div>
             {/* Progress bar */}
-            <div className="w-full h-2 rounded-full bg-blue-200/60 overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-[#A9502B]/20 overflow-hidden">
               <div
-                className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                className="h-full bg-[#A9502B] rounded-full transition-all duration-300"
                 style={{ width: `${jobState.progress}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500">
-              <span className="text-blue-800 font-medium">{jobState.stage}</span>
+            <div className="flex items-center justify-between text-[11px] text-[#5B5048]">
+              <span className="text-[#A9502B] font-medium">{jobState.stage}</span>
               <span>CP-SAT search (est. 30–45s)</span>
             </div>
           </div>
@@ -250,7 +255,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
             </div>
             <button
               onClick={handleGenerate}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-[#F3ECE2] font-semibold text-xs transition-all shadow-xs"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Retry Generation</span>
@@ -272,12 +277,12 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
         )}
 
         {/* Filter Controls Bar */}
-        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="pt-3 border-t border-[#1E1915]/10 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-500 uppercase tracking-wider text-[11px] flex items-center gap-1">
+            <span className="font-semibold text-[#5B5048] uppercase tracking-wider text-[11px] flex items-center gap-1 font-mono">
               <Filter className="h-3 w-3" /> Filter By:
             </span>
-            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <div className="flex rounded-xl bg-[#F3ECE2] p-1 border border-[#1E1915]/10">
               {(['all', 'group', 'faculty', 'room'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -287,8 +292,8 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
                   }}
                   className={`px-3 py-1 rounded-lg font-semibold transition-all capitalize ${
                     filterType === mode
-                      ? 'bg-white text-blue-700 shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#A9502B] text-[#F3ECE2] shadow-2xs font-bold'
+                      : 'text-[#5B5048] hover:text-[#1E1915]'
                   }`}
                 >
                   {mode}
@@ -301,7 +306,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium outline-none"
+                className="px-3 py-1.5 rounded-xl border border-[#1E1915]/15 bg-[#FBF8F3] text-[#1E1915] font-medium outline-none"
               >
                 <option value="">Select Student Group (All 14)</option>
                 {['CSE-1', 'CSE-2', 'CSE-3', 'ECE-1', 'ECE-2', 'ECE-3', 'EE-1', 'EE-2', 'EE-3', 'ME-1', 'ME-2', 'ME-3', 'CE-1', 'CE-2'].map((g) => (
@@ -314,7 +319,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium outline-none"
+                className="px-3 py-1.5 rounded-xl border border-[#1E1915]/15 bg-[#FBF8F3] text-[#1E1915] font-medium outline-none"
               >
                 <option value="">Select Faculty (All 40)</option>
                 {['F01', 'F02', 'F03', 'F04', 'F05', 'F06', 'F07', 'F08', 'F09', 'F10', 'F11', 'F12', 'F39', 'F40'].map((f) => (
@@ -327,7 +332,7 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
               <select
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-medium outline-none"
+                className="px-3 py-1.5 rounded-xl border border-[#1E1915]/15 bg-[#FBF8F3] text-[#1E1915] font-medium outline-none"
               >
                 <option value="">Select Venue (All 27)</option>
                 {['LH-1', 'LH-2', 'LH-3', 'LH-4', 'LH-5', 'LH-6', 'AUD', 'CR-101', 'CR-102', 'CS-LAB-1', 'CS-LAB-2', 'PHY-LAB', 'ELEC-LAB-1'].map((r) => (
@@ -345,8 +350,8 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
                 onClick={() => setSelectedDay(d)}
                 className={`px-2.5 py-1 rounded-lg font-mono font-bold text-[11px] transition-all ${
                   selectedDay === d
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-500 hover:bg-slate-100'
+                    ? 'bg-[#A9502B] text-[#F3ECE2]'
+                    : 'text-[#5B5048] hover:bg-[#F3ECE2]'
                 }`}
               >
                 {d}
@@ -357,17 +362,17 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
       </div>
 
       {/* Timetable Grid View */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-mono text-xs">
-                <th className="py-3 px-4 w-28 font-bold border-r border-slate-200">Day / Period</th>
+              <tr className="bg-[#F3ECE2] border-b border-[#1E1915]/10 text-[#5B5048] font-mono text-xs">
+                <th className="py-3 px-4 w-28 font-bold border-r border-[#1E1915]/10">Day / Period</th>
                 {periods.map((p) => (
                   <th
                     key={p}
-                    className={`py-3 px-3 text-center min-w-[140px] font-bold border-r border-slate-200 ${
-                      p === 5 ? 'bg-amber-50/40 text-amber-800' : ''
+                    className={`py-3 px-3 text-center min-w-[140px] font-bold border-r border-[#1E1915]/10 ${
+                      p === 5 ? 'bg-[#A9502B]/10 text-[#A9502B]' : ''
                     }`}
                   >
                     <div>P{p}</div>
@@ -386,14 +391,14 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 text-xs">
+            <tbody className="divide-y divide-[#1E1915]/10 text-xs">
               {days
                 .filter((d) => selectedDay === 'ALL' || selectedDay === d)
                 .map((d) => (
-                  <tr key={d} className="hover:bg-slate-50/40 transition-colors">
-                    <td className="py-4 px-4 font-bold font-mono text-slate-800 bg-slate-50/80 border-r border-slate-200 align-top">
-                      <div className="text-sm text-blue-700">{d}</div>
-                      <div className="text-[10px] text-slate-400 font-normal">
+                  <tr key={d} className="hover:bg-[#F3ECE2]/40 transition-colors">
+                    <td className="py-4 px-4 font-bold font-mono text-[#1E1915] bg-[#F3ECE2]/70 border-r border-[#1E1915]/10 align-top">
+                      <div className="text-sm font-serif font-bold text-[#A9502B]">{d}</div>
+                      <div className="text-[10px] text-[#5B5048] font-normal">
                         {d === 'MON' && 'Monday'}
                         {d === 'TUE' && 'Tuesday'}
                         {d === 'WED' && 'Wednesday'}
@@ -407,12 +412,12 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
                       return (
                         <td
                           key={p}
-                          className={`p-2 border-r border-slate-200 align-top min-w-[140px] ${
-                            p === 5 ? 'bg-amber-50/20' : ''
+                          className={`p-2 border-r border-[#1E1915]/10 align-top min-w-[140px] ${
+                            p === 5 ? 'bg-amber-950/5' : ''
                           }`}
                         >
                           {cellSessions.length === 0 ? (
-                            <div className="h-16 flex items-center justify-center text-[10px] text-slate-300">
+                            <div className="h-16 flex items-center justify-center text-[10px] text-[#5B5048]/40">
                               —
                             </div>
                           ) : (
@@ -422,26 +427,26 @@ export const TimetablePage: React.FC<TimetablePageProps> = ({ summary }) => {
                                   key={s.session_id}
                                   className={`p-2 rounded-xl border text-[11px] shadow-2xs space-y-1 transition-all hover:scale-[1.02] ${
                                     s.kind === 'lab'
-                                      ? 'bg-amber-50 border-amber-200 text-amber-900'
+                                      ? 'bg-[#243C50]/10 border-[#243C50]/25 text-[#243C50]'
                                       : s.basket_slot
-                                      ? 'bg-purple-50 border-purple-200 text-purple-900'
+                                      ? 'bg-[#C8693F]/15 border-[#C8693F]/30 text-[#A9502B]'
                                       : s.fixed_slot
-                                      ? 'bg-rose-50 border-rose-200 text-rose-900'
-                                      : 'bg-blue-50 border-blue-200 text-blue-900'
+                                      ? 'bg-amber-950/10 border-amber-300 text-amber-900'
+                                      : 'bg-[#FBF8F3] border-[#A9502B]/30 text-[#1E1915]'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between font-bold">
-                                    <span className="truncate max-w-[100px]">{s.course_id}</span>
-                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-white/80">
+                                    <span className="truncate max-w-[100px] text-[#1E1915]">{s.course_id}</span>
+                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[#F3ECE2] text-[#5B5048]">
                                       {s.duration}h
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-slate-600 truncate">{s.course_name}</p>
-                                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                                  <p className="text-[10px] text-[#5B5048] truncate">{s.course_name}</p>
+                                  <div className="flex items-center justify-between text-[10px] text-[#5B5048] font-mono">
                                     <span>{s.room_id}</span>
                                     <span>{s.faculty_id}</span>
                                   </div>
-                                  <div className="text-[9px] text-slate-500 truncate">
+                                  <div className="text-[9px] text-[#5B5048]/80 truncate">
                                     {s.groups.join(', ')}
                                   </div>
                                 </div>

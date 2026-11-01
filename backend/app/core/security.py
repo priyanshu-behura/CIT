@@ -2,11 +2,22 @@ import os
 import hashlib
 import secrets
 import logging
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import jwt
 
 logger = logging.getLogger(__name__)
+
+# Ensure backend/.env is loaded if present (skip in explicit production test mode)
+try:
+    if (os.getenv("APP_ENV") or "").lower().strip() != "production":
+        from dotenv import load_dotenv
+        _env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+        if _env_path.exists():
+            load_dotenv(dotenv_path=_env_path)
+except ImportError:
+    pass
 
 # Resolve secret from environment:
 # 1. Primary: CIT_SECRET_KEY

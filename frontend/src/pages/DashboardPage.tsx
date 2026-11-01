@@ -22,6 +22,7 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { Badge } from '../components/ui/Badge';
+import { StarBorder } from '../components/ui/StarBorder';
 import { api } from '../services/api';
 import type { User, DatasetSummary, DetailedSession, BookingRecord, AnalyticsOverview } from '../types/dataset';
 
@@ -120,17 +121,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#FBF8F3] rounded-2xl border border-[#1E1915]/10 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-xl font-serif font-bold text-[#1E1915] tracking-tight">
               Welcome back, {user?.full_name || 'Academic Administrator'}
             </h2>
-            <Badge variant={user?.role === 'admin' ? 'error' : user?.role === 'coordinator' ? 'electric' : user?.role === 'faculty' ? 'success' : 'warning'}>
+            <Badge variant={user?.role === 'admin' ? 'error' : user?.role === 'coordinator' ? 'academic' : user?.role === 'faculty' ? 'success' : 'warning'}>
               {user?.role?.toUpperCase()}
             </Badge>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5B5048] mt-1 font-sans">
             Chilika Institute of Technology &middot; {user?.department ? `${user.department} Department` : 'Central Campus Administration'} &middot; Academic Year 2026–2027
           </p>
         </div>
@@ -141,37 +142,45 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 onClick={() => setShowResetModal(true)}
                 disabled={isSolving || isResetting}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-rose-300 bg-rose-50/70 hover:bg-rose-100 text-rose-800 text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
                 title="Reset database to clean baseline snapshot (Admin Only)"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Reset Demo State</span>
               </button>
 
-              <button
+              <StarBorder
+                as="button"
                 onClick={handleGenerateTimetable}
                 disabled={isSolving || isResetting}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+                radius={12}
+                color="#C8693F"
+                trailColor="#A9502B"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#A9502B] hover:bg-[#8F3F1E] text-[#F3ECE2] text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
               >
                 <Play className="h-3.5 w-3.5" />
                 <span>{isSolving ? 'Solving OR-Tools CP-SAT...' : 'Generate Optimized Timetable'}</span>
-              </button>
+              </StarBorder>
             </>
           )}
 
           {user?.role === 'club' && (
-            <button
+            <StarBorder
+              as="button"
               onClick={() => onNavigate('bookings')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+              radius={12}
+              color="#C8693F"
+              trailColor="#A9502B"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#A9502B] hover:bg-[#8F3F1E] text-[#F3ECE2] text-xs font-semibold shadow-sm transition-all"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Submit Event Request</span>
-            </button>
+            </StarBorder>
           )}
 
-          <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-right">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fest Week</span>
-            <span className="text-xs font-bold text-blue-700 font-mono">Week 7 (Spectra '27)</span>
+          <div className="px-3.5 py-2 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 text-right">
+            <span className="text-[10px] font-bold text-[#5B5048] uppercase tracking-wider block font-mono">Fest Week</span>
+            <span className="text-xs font-bold text-[#A9502B] font-mono">Week 7 (Spectra '27)</span>
           </div>
         </div>
       </div>
@@ -256,7 +265,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <button
                   onClick={() => onNavigate('bookings')}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
                 >
                   View All Requests <ArrowRight className="h-3 w-3" />
                 </button>
@@ -265,7 +274,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-mono uppercase text-[10px]">
+                    <tr className="border-b border-[#1E1915]/10 text-[#5B5048] font-mono uppercase text-[10px]">
                       <th className="pb-2 px-2">Req ID</th>
                       <th className="pb-2 px-2">Requester</th>
                       <th className="pb-2 px-2">Event Title</th>
@@ -273,17 +282,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <th className="pb-2 px-2">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 font-sans">
+                  <tbody className="divide-y divide-[#1E1915]/10 font-sans">
                     {pendingBookings.slice(0, 5).map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-2 font-mono font-bold text-blue-600">{b.id}</td>
-                        <td className="py-2.5 px-2 font-medium text-slate-800">{b.requester_name}</td>
-                        <td className="py-2.5 px-2 text-slate-600 max-w-[200px] truncate">{b.title}</td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-slate-700">{b.attendance}</td>
+                      <tr key={b.id} className="hover:bg-[#F3ECE2]/60 transition-colors">
+                        <td className="py-2.5 px-2 font-mono font-bold text-[#A9502B]">{b.id}</td>
+                        <td className="py-2.5 px-2 font-medium text-[#1E1915]">{b.requester_name}</td>
+                        <td className="py-2.5 px-2 text-[#5B5048] max-w-[200px] truncate">{b.title}</td>
+                        <td className="py-2.5 px-2 text-right font-mono font-bold text-[#1E1915]">{b.attendance}</td>
                         <td className="py-2.5 px-2">
                           <button
                             onClick={() => onNavigate('bookings')}
-                            className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold text-[11px] hover:bg-blue-100 transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-[#A9502B]/10 text-[#A9502B] font-semibold text-[11px] hover:bg-[#A9502B]/20 transition-colors"
                           >
                             Review
                           </button>
@@ -304,7 +313,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <button
                   onClick={() => onNavigate('timetable')}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
                 >
                   Full Weekly Grid <ArrowRight className="h-3 w-3" />
                 </button>
@@ -312,19 +321,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
               <div className="space-y-2">
                 {sessions.slice(0, 5).map((s) => (
-                  <div key={s.session_id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                  <div key={s.session_id} className="p-3 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 flex items-center justify-between text-xs">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{s.course_name}</span>
-                        <Badge variant={s.kind === 'lab' ? 'warning' : 'electric'} size="sm">{s.kind}</Badge>
+                        <span className="font-bold text-[#1E1915]">{s.course_name}</span>
+                        <Badge variant={s.kind === 'lab' ? 'warning' : 'academic'} size="sm">{s.kind}</Badge>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-[11px] text-[#5B5048] mt-0.5">
                         {s.faculty_name} &middot; Groups: {s.groups.join(', ')}
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="font-mono font-bold text-blue-700">{s.day} P{s.start_period}–P{s.end_period}</span>
-                      <p className="text-[11px] text-slate-400">{s.room_name}</p>
+                      <span className="font-mono font-bold text-[#243C50]">{s.day} P{s.start_period}–P{s.end_period}</span>
+                      <p className="text-[11px] text-[#5B5048]">{s.room_name}</p>
                     </div>
                   </div>
                 ))}
@@ -343,12 +352,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 {analytics?.room_utilization?.slice(0, 6).map((r) => (
                   <div key={r.room_id} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-800">{r.name}</span>
-                      <span className="font-mono font-bold text-blue-700">{r.utilization_percent}%</span>
+                      <span className="font-medium text-[#1E1915]">{r.name}</span>
+                      <span className="font-mono font-bold text-[#A9502B]">{r.utilization_percent}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-[#EAE2D7] rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-blue-600 h-1.5 rounded-full"
+                        className="bg-[#A9502B] h-1.5 rounded-full"
                         style={{ width: `${Math.min(r.utilization_percent, 100)}%` }}
                       />
                     </div>
@@ -365,30 +374,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="space-y-2">
                 <button
                   onClick={() => onNavigate('reports')}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-left flex items-center justify-between transition-colors"
+                  className="w-full p-2.5 rounded-xl border border-[#1E1915]/10 bg-[#F3ECE2] hover:bg-[#F3ECE2]/70 text-left flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                    <ShieldCheck className="h-4 w-4 text-emerald-700" />
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">Run Official Validator</p>
-                      <p className="text-[10px] text-slate-400">Execute validator.py</p>
+                      <p className="text-xs font-semibold text-[#1E1915]">Run Official Validator</p>
+                      <p className="text-[10px] text-[#5B5048]">Execute validator.py</p>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                  <ChevronRight className="h-4 w-4 text-[#5B5048]" />
                 </button>
 
                 <button
                   onClick={() => onNavigate('disruptions')}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-left flex items-center justify-between transition-colors"
+                  className="w-full p-2.5 rounded-xl border border-[#1E1915]/10 bg-[#F3ECE2] hover:bg-[#F3ECE2]/70 text-left flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <AlertTriangle className="h-4 w-4 text-rose-600" />
+                    <AlertTriangle className="h-4 w-4 text-[#A9502B]" />
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">Disruption Rescheduling</p>
-                      <p className="text-[10px] text-slate-400">Minimal session displacement</p>
+                      <p className="text-xs font-semibold text-[#1E1915]">Disruption Rescheduling</p>
+                      <p className="text-[10px] text-[#5B5048]">Minimal session displacement</p>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                  <ChevronRight className="h-4 w-4 text-[#5B5048]" />
                 </button>
               </div>
             </Card>
@@ -408,7 +417,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <button
                   onClick={() => onNavigate('timetable')}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
                 >
                   View Full Grid <ArrowRight className="h-3 w-3" />
                 </button>
@@ -416,24 +425,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
               <div className="space-y-2.5">
                 {facultySessions.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400">
+                  <div className="p-8 text-center text-xs text-[#5B5048]">
                     No classes scheduled. Click 'Generate Timetable' or view institute timetable.
                   </div>
                 ) : (
                   facultySessions.map((s) => (
-                    <div key={s.session_id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div key={s.session_id} className="p-3.5 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-slate-900">{s.course_name} ({s.course_id})</h4>
-                          <Badge variant={s.kind === 'lab' ? 'warning' : 'electric'} size="sm">{s.kind}</Badge>
+                          <h4 className="text-sm font-serif font-bold text-[#1E1915]">{s.course_name} ({s.course_id})</h4>
+                          <Badge variant={s.kind === 'lab' ? 'warning' : 'academic'} size="sm">{s.kind}</Badge>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Room: <strong className="text-slate-800">{s.room_name} ({s.room_id})</strong> &middot; Cohort: {s.groups.join(', ')}
+                        <p className="text-xs text-[#5B5048] mt-1">
+                          Room: <strong className="text-[#1E1915]">{s.room_name} ({s.room_id})</strong> &middot; Cohort: {s.groups.join(', ')}
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono font-bold text-sm text-blue-700">{s.day}</span>
-                        <p className="text-xs text-slate-500 font-mono">P{s.start_period}–P{s.end_period}</p>
+                        <span className="font-mono font-bold text-sm text-[#A9502B]">{s.day}</span>
+                        <p className="text-xs text-[#5B5048] font-mono">P{s.start_period}–P{s.end_period}</p>
                       </div>
                     </div>
                   ))
@@ -448,12 +457,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <CardTitle>Teaching Workload Policy</CardTitle>
                 <CardDescription>Constraint H12 daily limits</CardDescription>
               </CardHeader>
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 space-y-2">
+              <div className="p-4 rounded-xl bg-[#243C50]/10 border border-[#243C50]/20 text-xs text-[#243C50] space-y-2">
                 <p className="font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <CheckCircle2 className="h-4 w-4 text-[#243C50]" />
                   Maximum 4 Hours / Day Respected
                 </p>
-                <p className="text-emerald-700 leading-normal">
+                <p className="text-[#243C50]/90 leading-normal">
                   The solver guarantees you will never be assigned more than 4 teaching hours on any single day, preventing burnout and lecture fatigue.
                 </p>
               </div>
@@ -474,7 +483,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <button
                   onClick={() => onNavigate('bookings')}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
                 >
                   Submit New Request <ArrowRight className="h-3 w-3" />
                 </button>
@@ -482,16 +491,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
               <div className="space-y-3">
                 {userBookings.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400">
+                  <div className="p-8 text-center text-xs text-[#5B5048]">
                     No active booking requests. Use the Natural Language Assistant to book a venue!
                   </div>
                 ) : (
                   userBookings.slice(0, 5).map((b) => (
-                    <div key={b.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div key={b.id} className="p-3.5 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-xs text-blue-600">{b.id}</span>
-                          <span className="font-bold text-xs text-slate-900">{b.title}</span>
+                          <span className="font-mono font-bold text-xs text-[#A9502B]">{b.id}</span>
+                          <span className="font-serif font-bold text-xs text-[#1E1915]">{b.title}</span>
                           <Badge
                             variant={
                               b.status === 'approved' ? 'success' :
@@ -503,13 +512,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                             {b.status.replace('_', ' ')}
                           </Badge>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-[#5B5048] mt-1">
                           Attendance: {b.attendance} &middot; Duration: {b.duration_periods}h
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-mono font-bold text-slate-800">{b.assigned_room_id || 'Pending Room'}</span>
-                        {b.assigned_day && <p className="text-[11px] text-slate-500 font-mono">{b.assigned_day} P{b.assigned_start_period}–P{b.assigned_end_period}</p>}
+                        <span className="text-xs font-mono font-bold text-[#1E1915]">{b.assigned_room_id || 'Pending Room'}</span>
+                        {b.assigned_day && <p className="text-[11px] text-[#5B5048] font-mono">{b.assigned_day} P{b.assigned_start_period}–P{b.assigned_end_period}</p>}
                       </div>
                     </div>
                   ))
@@ -525,12 +534,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <CardDescription>English & Hinglish input</CardDescription>
               </CardHeader>
               <div className="space-y-3">
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-[#5B5048]">
                   Book venues by speaking or typing naturally. The AI assistant extracts all parameters into reviewable drafts.
                 </p>
                 <button
                   onClick={() => onNavigate('assistant')}
-                  className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-[#A9502B] hover:bg-[#8F3F1E] text-[#F3ECE2] font-semibold text-xs transition-colors flex items-center justify-center gap-2"
                 >
                   <Sparkles className="h-4 w-4" />
                   Try AI Booking Assistant
@@ -553,7 +562,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
                 <button
                   onClick={() => onNavigate('timetable')}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
                 >
                   View Department Timetable <ArrowRight className="h-3 w-3" />
                 </button>
@@ -561,7 +570,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-mono uppercase text-[10px]">
+                    <tr className="border-b border-[#1E1915]/10 text-[#5B5048] font-mono uppercase text-[10px]">
                       <th className="pb-2 px-2">Department</th>
                       <th className="pb-2 px-2 text-right">Faculty</th>
                       <th className="pb-2 px-2 text-right">Total Hrs</th>
@@ -569,27 +578,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <th className="pb-2 px-2">Load Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 font-sans">
+                  <tbody className="divide-y divide-[#1E1915]/10 font-sans">
                     {analytics?.department_workload?.map((dept) => (
-                      <tr key={dept.department} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-2 font-bold text-slate-800">{dept.department}</td>
-                        <td className="py-2.5 px-2 text-right font-mono text-slate-600">{dept.faculty_count}</td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-blue-700">{dept.total_teaching_hours}h</td>
-                        <td className="py-2.5 px-2 text-right font-mono text-slate-700">{dept.avg_hours_per_faculty.toFixed(1)}h</td>
+                      <tr key={dept.department} className="hover:bg-[#F3ECE2]/60 transition-colors">
+                        <td className="py-2.5 px-2 font-bold text-[#1E1915]">{dept.department}</td>
+                        <td className="py-2.5 px-2 text-right font-mono text-[#5B5048]">{dept.faculty_count}</td>
+                        <td className="py-2.5 px-2 text-right font-mono font-bold text-[#A9502B]">{dept.total_teaching_hours}h</td>
+                        <td className="py-2.5 px-2 text-right font-mono text-[#1E1915]">{dept.avg_hours_per_faculty.toFixed(1)}h</td>
                         <td className="py-2.5 px-2">
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                             dept.avg_hours_per_faculty <= 4
-                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              ? 'text-emerald-800 bg-emerald-950/10 border-emerald-300'
                               : dept.avg_hours_per_faculty <= 6
-                              ? 'text-amber-700 bg-amber-50 border-amber-200'
-                              : 'text-rose-700 bg-rose-50 border-rose-200'
+                              ? 'text-amber-800 bg-amber-950/10 border-amber-300'
+                              : 'text-rose-800 bg-rose-950/10 border-rose-300'
                           }`}>
                             {dept.avg_hours_per_faculty <= 4 ? 'Balanced' : dept.avg_hours_per_faculty <= 6 ? 'Moderate' : 'High Load'}
                           </span>
                         </td>
                       </tr>
                     )) ?? (
-                      <tr><td colSpan={5} className="py-4 text-center text-slate-400 text-xs">Loading workload data...</td></tr>
+                      <tr><td colSpan={5} className="py-4 text-center text-[#5B5048] text-xs">Loading workload data...</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -605,14 +614,159 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </CardHeader>
               <div className="space-y-2 text-xs">
                 {analytics?.cohort_workload?.slice(0, 7).map((c) => (
-                  <div key={c.group_id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <div key={c.group_id} className="flex items-center justify-between p-2.5 rounded-lg bg-[#F3ECE2] border border-[#1E1915]/10">
                     <div>
-                      <span className="font-bold text-slate-800">{c.group_id}</span>
-                      <span className="text-[10px] text-slate-400 ml-1.5">({c.size} students)</span>
+                      <span className="font-bold text-[#1E1915]">{c.group_id}</span>
+                      <span className="text-[10px] text-[#5B5048] ml-1.5">({c.size} students)</span>
                     </div>
-                    <span className="font-mono text-blue-700 font-bold">{c.weekly_teaching_hours} hrs/wk</span>
+                    <span className="font-mono text-[#243C50] font-bold">{c.weekly_teaching_hours} hrs/wk</span>
                   </div>
-                )) ?? <p className="text-xs text-slate-400 text-center py-4">Loading...</p>}
+                )) ?? <p className="text-xs text-[#5B5048] text-center py-4">Loading...</p>}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* 5. STUDENT VIEW */}
+      {user?.role === 'student' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <div>
+                  <CardTitle>My Academic Schedule Overview</CardTitle>
+                  <CardDescription>
+                    {user?.department ? `${user.department} Department Cohort Classes` : 'Enrolled B.Tech Curriculum'}
+                  </CardDescription>
+                </div>
+                <button
+                  onClick={() => onNavigate('timetable')}
+                  className="text-xs font-semibold text-[#A9502B] hover:text-[#8F3F1E] flex items-center gap-1"
+                >
+                  View Full Timetable <ArrowRight className="h-3 w-3" />
+                </button>
+              </CardHeader>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1E1915]/10 text-[#5B5048] font-mono uppercase text-[10px]">
+                      <th className="pb-2 px-2">Course</th>
+                      <th className="pb-2 px-2">Type</th>
+                      <th className="pb-2 px-2">Faculty</th>
+                      <th className="pb-2 px-2">Venue</th>
+                      <th className="pb-2 px-2 text-right">Timing</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1E1915]/10 font-sans">
+                    {sessions
+                      .filter((s) => s.course_id?.startsWith(user?.department || 'CS') || s.groups?.some(g => g.startsWith(user?.department || 'CSE')))
+                      .slice(0, 7)
+                      .map((s) => (
+                        <tr key={s.session_id} className="hover:bg-[#F3ECE2]/60 transition-colors">
+                          <td className="py-2.5 px-2 font-medium text-[#1E1915]">
+                            <div className="font-bold">{s.course_name}</div>
+                            <div className="text-[10px] text-[#5B5048] font-mono">{s.course_id}</div>
+                          </td>
+                          <td className="py-2.5 px-2">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                              s.kind === 'lab'
+                                ? 'bg-indigo-950/10 text-indigo-800 border-indigo-300'
+                                : 'bg-[#243C50]/10 text-[#243C50] border-[#243C50]/30'
+                            }`}>
+                              {s.kind.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-2 text-[#5B5048]">{s.faculty_name}</td>
+                          <td className="py-2.5 px-2 font-mono font-bold text-[#A9502B]">{s.room_id}</td>
+                          <td className="py-2.5 px-2 text-right font-mono font-bold text-[#1E1915]">
+                            {s.day} P{s.start_period}–P{s.end_period}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Quick Actions Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div
+                onClick={() => onNavigate('timetable')}
+                className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 hover:border-[#A9502B]/40 hover:shadow-card-hover transition-all cursor-pointer space-y-1.5"
+              >
+                <div className="flex items-center gap-2 text-[#A9502B]">
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="font-serif font-bold text-xs text-[#1E1915]">Weekly Timetable</span>
+                </div>
+                <p className="text-[11px] text-[#5B5048]">Browse all P1–P9 teaching sessions across lecture halls & labs.</p>
+              </div>
+
+              <div
+                onClick={() => onNavigate('exams')}
+                className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 hover:border-[#A9502B]/40 hover:shadow-card-hover transition-all cursor-pointer space-y-1.5"
+              >
+                <div className="flex items-center gap-2 text-emerald-700">
+                  <FileCheck2 className="h-4 w-4" />
+                  <span className="font-serif font-bold text-xs text-[#1E1915]">Midsem Schedule</span>
+                </div>
+                <p className="text-[11px] text-[#5B5048]">Check exam slots and assigned rooms with halved seating.</p>
+              </div>
+
+              <div
+                onClick={() => onNavigate('ai-chat')}
+                className="p-4 rounded-xl bg-[#FBF8F3] border border-[#1E1915]/10 hover:border-[#A9502B]/40 hover:shadow-card-hover transition-all cursor-pointer space-y-1.5"
+              >
+                <div className="flex items-center gap-2 text-[#243C50]">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="font-serif font-bold text-xs text-[#1E1915]">Campus AI</span>
+                </div>
+                <p className="text-[11px] text-[#5B5048]">Ask questions about room availability, timings, or coursework.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar: Student Profile & Institutional Badges */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Student Profile</CardTitle>
+                <CardDescription>Verified Institutional Registration</CardDescription>
+              </CardHeader>
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#5B5048]">Full Name</span>
+                    <span className="font-bold text-[#1E1915]">{user?.full_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#5B5048]">Institutional Email</span>
+                    <span className="font-mono text-[#1E1915] text-[11px] truncate max-w-[140px]">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#5B5048]">Department</span>
+                    <span className="font-bold text-[#A9502B]">{user?.department || 'CSE'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#5B5048]">Registration No.</span>
+                    <span className="font-mono font-bold text-[#243C50]">{user?.registration_no || 'CIT-2026-STU'}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-[#1E1915]/10">
+                    <span className="text-[#5B5048]">Account Status</span>
+                    <span className="text-emerald-800 font-semibold flex items-center gap-1 text-[11px]">
+                      <CheckCircle2 className="h-3 w-3" /> Active & Verified
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#243C50]/5 border border-[#243C50]/15 space-y-1 text-[#243C50]">
+                  <p className="font-bold flex items-center gap-1.5 text-xs">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Campus Fest Week 7
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    Spectra '27 Fest events will run during evening slots (P10–P13, 18:00–22:00) with no interference to your academic timetable.
+                  </p>
+                </div>
               </div>
             </Card>
           </div>
@@ -621,21 +775,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Admin Reset Confirmation Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3 text-rose-600 mb-4">
-              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#191513]/60 backdrop-blur-xs p-4">
+          <div className="bg-[#FBF8F3] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#1E1915]/15 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-700 mb-4">
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200">
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Reset Platform to Baseline</h3>
-                <p className="text-xs text-slate-500">Authorized Academic Administrator Action</p>
+                <h3 className="text-base font-serif font-bold text-[#1E1915]">Reset Platform to Baseline</h3>
+                <p className="text-xs text-[#5B5048]">Authorized Academic Administrator Action</p>
               </div>
             </div>
 
-            <div className="space-y-3 text-xs text-slate-600 mb-6 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <p className="font-semibold text-slate-800">This action will atomically:</p>
-              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600">
+            <div className="space-y-3 text-xs text-[#5B5048] mb-6 bg-[#F3ECE2] p-3.5 rounded-xl border border-[#1E1915]/10">
+              <p className="font-semibold text-[#1E1915]">This action will atomically:</p>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-[#5B5048]">
                 <li>Restore the baseline timetable & exams from original validated snapshot.</li>
                 <li>Reset the active schedule served by the platform to validated baseline (0 hard violations, soft penalty 232).</li>
                 <li>Re-seed all 25 official booking requests from the dataset (BR-01 through BR-20, with BR-04 cancelled).</li>
@@ -649,7 +803,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 type="button"
                 onClick={() => setShowResetModal(false)}
                 disabled={isResetting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#5B5048] hover:bg-[#F3ECE2] transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -657,7 +811,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 type="button"
                 onClick={handleAdminReset}
                 disabled={isResetting}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-700 hover:bg-rose-800 text-[#F3ECE2] shadow-sm transition-all disabled:opacity-50"
               >
                 <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
                 <span>{isResetting ? 'Resetting Demo State...' : 'Confirm & Reset'}</span>

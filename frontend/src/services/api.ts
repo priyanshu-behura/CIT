@@ -10,6 +10,7 @@ import type {
   ExamItem,
   User,
   DemoAccount,
+  DepartmentItem,
   DetailedSession,
   ScheduledExam,
   BookingRecord,
@@ -17,6 +18,11 @@ import type {
   AnalyticsOverview,
   NotificationItem
 } from '../types/dataset';
+
+export interface ChatHistoryItem {
+  role: string;
+  text: string;
+}
 
 export interface AIChatResponse {
   answer: string;
@@ -45,6 +51,32 @@ export function setToken(token: string | null) {
   }
 }
 
+export function formatErrorDetail(detail: any): string {
+  if (!detail) return 'Unknown error';
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((err) => {
+        if (!err) return '';
+        if (typeof err === 'string') return err;
+        const loc = Array.isArray(err.loc)
+          ? err.loc.filter((l: any) => l !== 'body').join('.')
+          : err.loc || '';
+        const msg = err.msg || err.message || JSON.stringify(err);
+        return loc ? `${loc}: ${msg}` : msg;
+      })
+      .filter(Boolean)
+      .join('; ');
+  }
+  if (typeof detail === 'object') {
+    if (detail.message) return String(detail.message);
+    if (detail.msg) return String(detail.msg);
+    if (detail.detail) return formatErrorDetail(detail.detail);
+    return JSON.stringify(detail);
+  }
+  return String(detail);
+}
+
 async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -65,10 +97,15 @@ async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> 
     let errorDetail = response.statusText;
     try {
       const errJson = await response.json();
-      errorDetail = errJson.detail || errorDetail;
+      if (errJson && errJson.detail !== undefined) {
+        errorDetail = formatErrorDetail(errJson.detail);
+      } else if (errJson && errJson.message) {
+        errorDetail = errJson.message;
+      }
     } catch {
       // ignore
     }
+    console.error(`API Error ${response.status} [${url}]:`, errorDetail);
     throw new Error(`API error ${response.status}: ${errorDetail}`);
   }
 
@@ -93,6 +130,39 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  register: (data: {
+    full_name: string;
+    email: string;
+    registration_no?: string;
+    department: string;
+    password: string;
+    confirm_password: string;
+  }): Promise<{ message: string; user: User }> =>
+    fetchJson('/api/v1/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  forgotPassword: (email: string): Promise<{ message: string }> =>
+    fetchJson('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  verifyResetToken: (token: string): Promise<{ valid: boolean; email_masked: string }> =>
+    fetchJson('/api/v1/auth/verify-reset-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+  resetPassword: (
+    token: string,
+    new_password: string,
+    confirm_password: string
+  ): Promise<{ message: string }> =>
+    fetchJson('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password, confirm_password }),
+    }),
+  getDepartments: (): Promise<DepartmentItem[]> =>
+    fetchJson<DepartmentItem[]>('/api/v1/auth/departments'),
   getMe: (): Promise<User> => fetchJson<User>('/api/v1/auth/me'),
   getDemoAccounts: (): Promise<DemoAccount[]> => fetchJson<DemoAccount[]>('/api/v1/auth/demo-accounts'),
 
@@ -187,10 +257,10 @@ export const api = {
   getAnalytics: (): Promise<AnalyticsOverview> => fetchJson<AnalyticsOverview>('/api/v1/analytics/overview'),
 
   // AI Chat
-  queryAIChat: (query: string, role?: string, user_email?: string): Promise<AIChatResponse> =>
+  queryAIChat: (query: string, role?: string, user_email?: string, history?: ChatHistoryItem[]): Promise<AIChatResponse> =>
     fetchJson('/api/v1/chat/query', {
       method: 'POST',
-      body: JSON.stringify({ query, role, user_email }),
+      body: JSON.stringify({ query, role, user_email, history }),
     }),
 
   // Notifications

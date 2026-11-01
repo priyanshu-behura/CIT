@@ -44,20 +44,20 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onN
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center pt-24 px-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-elevated border border-slate-200 max-w-xl w-full overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#191513]/60 backdrop-blur-sm flex items-start justify-center pt-24 px-4 animate-in fade-in duration-150">
+      <div className="bg-[#FBF8F3] rounded-2xl shadow-elevated border border-[#1E1915]/15 max-w-xl w-full overflow-hidden">
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
-          <Search className="h-5 w-5 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#1E1915]/10">
+          <Search className="h-5 w-5 text-[#5B5048] shrink-0" />
           <input
             autoFocus
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command, page, or search query... (ESC to exit)"
-            className="w-full text-sm outline-none text-slate-800 placeholder-slate-400 bg-transparent font-medium"
+            className="w-full text-sm outline-none text-[#1E1915] placeholder-[#5B5048]/60 bg-transparent font-medium"
           />
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="p-1 hover:bg-[#F3ECE2] rounded-lg text-[#5B5048] hover:text-[#1E1915]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -65,7 +65,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onN
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">
+            <div className="py-8 text-center text-xs text-[#5B5048]">
               No matching pages found for "{query}"
             </div>
           ) : (
@@ -76,26 +76,26 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onN
                   onNavigate(item.page);
                   onClose();
                 }}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-blue-50/60 transition-colors group"
+                className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-[#F3ECE2] transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-white border border-slate-200 transition-colors">
+                  <div className="p-2 rounded-lg bg-[#F3ECE2] group-hover:bg-[#FBF8F3] border border-[#1E1915]/10 transition-colors">
                     {item.icon}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{item.title}</p>
-                    <p className="text-xs text-slate-500">{item.desc}</p>
+                    <p className="text-sm font-semibold text-[#1E1915] group-hover:text-[#A9502B] transition-colors">{item.title}</p>
+                    <p className="text-xs text-[#5B5048]">{item.desc}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-700">Jump</span>
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-[#F3ECE2] text-[#5B5048] group-hover:bg-[#A9502B]/10 group-hover:text-[#A9502B]">Jump</span>
               </button>
             ))
           )}
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
-          <span>Pro tip: Press <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px]">ESC</kbd> to dismiss</span>
+        <div className="px-4 py-2.5 bg-[#F3ECE2] border-t border-[#1E1915]/10 flex items-center justify-between text-[11px] text-[#5B5048] font-medium">
+          <span>Pro tip: Press <kbd className="px-1.5 py-0.5 rounded bg-[#FBF8F3] border border-[#1E1915]/15 font-mono text-[10px]">ESC</kbd> to dismiss</span>
           <span>CIT Campus Scheduling Platform</span>
         </div>
       </div>

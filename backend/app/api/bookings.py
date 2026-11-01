@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Header
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, Dict, Any, List, Union
 from app.services.booking_service import booking_service
 from app.services.nlp_booking_service import nlp_booking_service
 from app.api.auth import get_current_user
@@ -12,8 +12,8 @@ class CreateBookingRequest(BaseModel):
     title: str = Field(..., min_length=3)
     description: Optional[str] = ""
     requested_category: str = Field(default="club_event")
-    attendance: int = Field(..., gt=0)
-    duration_periods: int = Field(default=2, ge=1, le=6)
+    attendance: int = Field(..., gt=0, description="Estimated attendance (must be greater than 0)")
+    duration_periods: Optional[int] = Field(default=None, ge=1, le=12)
     day: str = Field(default="MON")
     start_period: int = Field(default=6, ge=1, le=13)
     end_period: int = Field(default=8, ge=1, le=13)
@@ -21,6 +21,17 @@ class CreateBookingRequest(BaseModel):
     needs: List[str] = Field(default=[])
     preferred_room_id: Optional[str] = None
     mandatory_for_groups: Optional[List[str]] = []
+
+    @field_validator("start_period", "end_period", mode="before")
+    @classmethod
+    def parse_period_int(cls, v: Any) -> int:
+        if isinstance(v, str):
+            clean = v.upper().replace("P", "").strip()
+            try:
+                return int(clean)
+            except ValueError:
+                raise ValueError(f"Invalid period format: '{v}'")
+        return int(v)
 
 
 class BookingDecisionRequest(BaseModel):
@@ -61,6 +72,18 @@ def create_booking(
     user_email = current_user["email"]
     user_role = current_user["role"]
 
+    if req.end_period < req.start_period:
+        raise HTTPException(status_code=422, detail="End period cannot be earlier than start period")
+
+    day_clean = req.day.upper().strip()
+    valid_days = {"MON", "TUE", "WED", "THU", "FRI", "SAT"}
+    if day_clean not in valid_days:
+        raise HTTPException(status_code=422, detail=f"Invalid day '{req.day}'. Must be one of {sorted(list(valid_days))}")
+
+    duration = req.duration_periods
+    if duration is None:
+        duration = max(1, req.end_period - req.start_period + 1)
+
     res = booking_service.create_booking(
         requester_name=user_name,
         requester_email=user_email,
@@ -69,8 +92,8 @@ def create_booking(
         description=req.description or "",
         requested_category=req.requested_category,
         attendance=req.attendance,
-        duration_periods=req.duration_periods,
-        day=req.day,
+        duration_periods=duration,
+        day=day_clean,
         start_period=req.start_period,
         end_period=req.end_period,
         room_types=req.room_types,

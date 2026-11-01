@@ -22,6 +22,12 @@ from app.api.admin import router as admin_router
 async def lifespan(app: FastAPI):
     # Initialize SQLite database and seed initial demo accounts & bookings
     init_db()
+    # Initialize MongoDB collections and indexes
+    try:
+        from app.core.mongo import init_mongo_indexes
+        init_mongo_indexes()
+    except Exception:
+        pass
     yield
 
 

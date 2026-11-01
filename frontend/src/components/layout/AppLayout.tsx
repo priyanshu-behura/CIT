@@ -98,9 +98,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     {
       label: 'AI & Intelligence',
       items: [
-        { id: 'assistant', label: 'Booking Assistant', icon: <Sparkles className="h-4 w-4 text-cyan-500" /> },
-        { id: 'ai-chat', label: 'Campus AI Chat', icon: <MessageSquare className="h-4 w-4 text-blue-500" /> },
-        { id: 'analytics', label: 'Campus Analytics', icon: <BarChart3 className="h-4 w-4 text-emerald-500" /> },
+        { id: 'assistant', label: 'Booking Assistant', icon: <Sparkles className="h-4 w-4 text-[#A9502B]" /> },
+        { id: 'ai-chat', label: 'Campus AI Chat', icon: <MessageSquare className="h-4 w-4 text-[#243C50]" /> },
+        { id: 'analytics', label: 'Campus Analytics', icon: <BarChart3 className="h-4 w-4 text-[#A9502B]" /> },
       ],
     },
     {
@@ -113,10 +113,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   ];
 
   const roleBadgeStyles: Record<string, string> = {
-    admin: 'bg-rose-50 text-rose-700 border-rose-200',
-    coordinator: 'bg-blue-50 text-blue-700 border-blue-200',
-    faculty: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    club: 'bg-amber-50 text-amber-700 border-amber-200',
+    admin: 'bg-[#A9502B]/10 text-[#A9502B] border-[#A9502B]/30',
+    coordinator: 'bg-[#243C50]/10 text-[#243C50] border-[#243C50]/30',
+    faculty: 'bg-emerald-950/10 text-emerald-800 border-emerald-300',
+    club: 'bg-amber-950/10 text-amber-800 border-amber-300',
+    student: 'bg-[#243C50]/10 text-[#243C50] border-[#243C50]/30',
   };
 
   const getPageTitle = (id: string) => {
@@ -129,7 +130,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       case 'spectra': return "Spectra Week '27 Management";
       case 'disruptions': return 'Disruption & Minimal Rescheduling';
       case 'assistant': return 'Natural Language Booking Assistant';
-      case 'ai-chat': return 'Campus Knowledge Assistant';
+      case 'ai-chat': return 'Campus AI';
       case 'analytics': return 'Campus Utilization & Workload';
       case 'reports': return 'Official Validator & JSON Exports';
       case 'settings': return 'System Settings & Demo State';
@@ -140,7 +141,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="min-h-screen bg-[#F5F8FF] text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F3ECE2] text-[#1E1915] flex flex-col font-sans selection:bg-[#A9502B]/20 selection:text-[#1E1915]">
       <GlobalSearch
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -152,52 +153,54 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         {/* Mobile Sidebar Overlay */}
         {isMobileOpen && (
           <div
-            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-[#191513]/60 backdrop-blur-sm lg:hidden"
             onClick={() => setIsMobileOpen(false)}
           />
         )}
 
         {/* Sidebar */}
         <aside
-          className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-200 ease-in-out shrink-0 ${
+          className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-[#FBF8F3] border-r border-[#1E1915]/10 flex flex-col transition-transform duration-200 ease-in-out shrink-0 ${
             isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >
           {/* Brand Header */}
-          <div className="h-16 px-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="h-16 px-5 border-b border-[#1E1915]/10 flex items-center justify-between">
             <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('dashboard')}>
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-700 to-cyan-500 flex items-center justify-center text-white shadow-sm shadow-blue-500/20">
-                <Calendar className="h-5 w-5" />
-              </div>
+              <img
+                src="/img/cit/cit-logo.png"
+                alt="CIT"
+                className="h-9 w-9 rounded-full object-cover shrink-0 shadow-xs border border-[#1E1915]/10"
+              />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm tracking-tight text-slate-900">CIT Campus Scheduling</span>
+                  <span className="font-serif font-bold text-sm tracking-tight text-[#1E1915]">CIT Scheduling</span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium">Chilika Inst. of Tech.</p>
+                <p className="text-[10px] text-[#5B5048] font-medium">Chilika Inst. of Tech.</p>
               </div>
             </div>
-            <button onClick={() => setIsMobileOpen(false)} className="lg:hidden p-1 rounded-lg text-slate-400 hover:bg-slate-100">
+            <button onClick={() => setIsMobileOpen(false)} className="lg:hidden p-1 rounded-lg text-[#5B5048] hover:bg-[#F3ECE2]">
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* User Role Card */}
-          <div className="p-3.5 m-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="p-3.5 m-3 rounded-xl bg-[#F3ECE2] border border-[#1E1915]/10">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Role</span>
+              <span className="text-[10px] font-bold text-[#5B5048] uppercase tracking-wider font-mono">Active Role</span>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${roleBadgeStyles[user?.role || 'admin']}`}>
                 {user?.role?.toUpperCase()}
               </span>
             </div>
-            <p className="text-xs font-bold text-slate-800 mt-1.5 truncate">{user?.full_name || 'Dean / Administrator'}</p>
-            <p className="text-[11px] text-slate-500 truncate">{user?.department ? `${user.department} Department` : 'Academic Administration'}</p>
+            <p className="text-xs font-serif font-bold text-[#1E1915] mt-1.5 truncate">{user?.full_name || 'Dean / Administrator'}</p>
+            <p className="text-[11px] text-[#5B5048] truncate">{user?.department ? `${user.department} Department` : 'Academic Administration'}</p>
           </div>
 
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
             {navGroups.map((group) => (
               <div key={group.label} className="space-y-1">
-                <p className="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{group.label}</p>
+                <p className="px-2.5 text-[10px] font-bold text-[#5B5048] uppercase tracking-wider font-mono">{group.label}</p>
                 {group.items.map((item) => {
                   const isActive = currentPage === item.id;
                   return (
@@ -209,15 +212,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          ? 'bg-[#A9502B] text-[#F3ECE2] shadow-sm shadow-[#A9502B]/20 font-bold'
+                          : 'text-[#5B5048] hover:text-[#1E1915] hover:bg-[#F3ECE2]/80'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-white' : 'text-slate-400'}>{item.icon}</span>
+                        <span className={isActive ? 'text-[#F3ECE2]' : 'text-[#5B5048]'}>{item.icon}</span>
                         <span>{item.label}</span>
                       </div>
-                      {isActive && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                      {isActive && <div className="h-1.5 w-1.5 rounded-full bg-[#F3ECE2]" />}
                     </button>
                   );
                 })}
@@ -226,17 +229,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="p-3 border-t border-slate-100 space-y-1 bg-slate-50/50">
+          <div className="p-3 border-t border-[#1E1915]/10 space-y-1 bg-[#FBF8F3]">
             <button
               onClick={() => onNavigate('landing')}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-white hover:text-blue-600 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-[#5B5048] hover:bg-[#F3ECE2] hover:text-[#A9502B] transition-colors"
             >
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+              <ExternalLink className="h-3.5 w-3.5 text-[#5B5048]" />
               <span>Public Landing Page</span>
             </button>
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-700 hover:bg-rose-50 transition-colors"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Sign Out Session</span>
@@ -247,48 +250,54 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         {/* Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Topbar */}
-          <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-30 h-16 bg-[#FBF8F3]/90 backdrop-blur-md border-b border-[#1E1915]/10 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 onClick={() => setIsMobileOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+                className="lg:hidden p-1.5 sm:p-2 rounded-lg text-[#5B5048] hover:bg-[#F3ECE2] shrink-0"
+                aria-label="Open Navigation Menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <span>CIT Campus</span>
-                  <ChevronRight className="h-3 w-3" />
-                  <span className="text-slate-600 font-medium capitalize">{currentPage}</span>
+              <img
+                src="/img/cit/cit-logo.png"
+                alt="CIT"
+                className="h-7 w-7 rounded-full object-cover shrink-0 lg:hidden border border-[#1E1915]/10"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[#5B5048] truncate">
+                  <span className="hidden xs:inline">CIT Campus</span>
+                  <ChevronRight className="h-3 w-3 shrink-0 hidden xs:inline" />
+                  <span className="text-[#1E1915] font-medium capitalize truncate">{currentPage}</span>
                 </div>
-                <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
+                <h1 className="text-xs sm:text-sm md:text-base font-serif font-bold text-[#1E1915] leading-tight truncate">
                   {getPageTitle(currentPage)}
                 </h1>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               {/* Command Palette Trigger */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-xs text-slate-500 font-medium transition-colors border border-slate-200"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F3ECE2] hover:bg-[#F3ECE2]/80 text-xs text-[#5B5048] font-medium transition-colors border border-[#1E1915]/10"
               >
-                <Search className="h-3.5 w-3.5 text-slate-400" />
+                <Search className="h-3.5 w-3.5 text-[#5B5048]" />
                 <span>Search pages & venues...</span>
-                <kbd className="px-1.5 py-0.2 rounded bg-white text-[10px] font-mono border border-slate-200 shadow-2xs">Ctrl K</kbd>
+                <kbd className="px-1.5 py-0.2 rounded bg-[#FBF8F3] text-[10px] font-mono border border-[#1E1915]/15 shadow-2xs">Ctrl K</kbd>
               </button>
 
               {/* Notifications Button */}
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 relative transition-colors"
+                  className="p-2 rounded-xl bg-[#F3ECE2] hover:bg-[#F3ECE2]/80 text-[#5B5048] relative transition-colors"
                   aria-label="Notifications"
                 >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#A9502B] animate-pulse" />
                   )}
                 </button>
                 <NotificationsPopover
@@ -300,29 +309,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               </div>
 
               {/* Profile Avatar Pill */}
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
+              <div className="flex items-center gap-2 pl-1.5 sm:pl-2 border-l border-[#1E1915]/10">
+                <div className="h-8 w-8 rounded-full bg-[#243C50] flex items-center justify-center text-[#F3ECE2] text-xs font-bold font-serif shadow-xs shrink-0">
                   {user?.full_name?.charAt(0) || 'A'}
                 </div>
                 <div className="hidden sm:block text-left">
-                  <p className="text-xs font-semibold text-slate-800 leading-none truncate max-w-[120px]">{user?.full_name?.split(' ')[0] || 'User'}</p>
-                  <span className="text-[10px] text-slate-400 uppercase font-mono">{user?.role || 'admin'}</span>
+                  <p className="text-xs font-serif font-bold text-[#1E1915] leading-none truncate max-w-[120px]">{user?.full_name?.split(' ')[0] || 'User'}</p>
+                  <span className="text-[10px] text-[#5B5048] uppercase font-mono">{user?.role || 'admin'}</span>
                 </div>
               </div>
             </div>
           </header>
 
           {/* Main Body */}
-          <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 min-w-0 overflow-x-hidden">
             {children}
           </main>
 
           {/* App Footer */}
-          <footer className="border-t border-slate-200 bg-white py-4 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <footer className="border-t border-[#1E1915]/10 bg-[#FBF8F3] py-3.5 px-4 sm:px-6 text-center text-xs text-[#5B5048] flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>Campus Scheduling & Venue Management Platform &middot; Chilika Institute of Technology (cit-public-v1)</span>
-            <div className="flex items-center gap-4 text-[11px] text-slate-400">
-              <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                <CheckCircle2 className="h-3 w-3" /> OR-Tools CP-SAT Solver Online
+            <div className="flex items-center gap-4 text-[11px] text-[#5B5048]">
+              <span className="flex items-center gap-1 text-emerald-800 font-medium">
+                <CheckCircle2 className="h-3 w-3 text-emerald-700" /> OR-Tools CP-SAT Solver Online
               </span>
               <span>189 Sessions Verified</span>
             </div>

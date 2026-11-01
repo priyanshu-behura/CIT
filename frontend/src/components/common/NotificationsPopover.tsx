@@ -33,20 +33,20 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-elevated border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="p-3.5 border-b border-slate-100 flex items-center justify-between">
+      <div className="absolute right-0 mt-2 w-80 md:w-96 bg-[#FBF8F3] rounded-2xl shadow-elevated border border-[#1E1915]/15 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="p-3.5 border-b border-[#1E1915]/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-blue-600" />
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">System Notifications</h4>
+            <Bell className="h-4 w-4 text-[#A9502B]" />
+            <h4 className="text-xs font-serif font-bold text-[#1E1915] uppercase tracking-wider">System Notifications</h4>
           </div>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#A9502B]/10 text-[#A9502B]">
             {notifications.length} recent
           </span>
         </div>
 
-        <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+        <div className="max-h-80 overflow-y-auto divide-y divide-[#1E1915]/10">
           {notifications.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">
+            <div className="py-8 text-center text-xs text-[#5B5048]">
               No new alerts or notifications.
             </div>
           ) : (
@@ -54,29 +54,29 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({
               <div
                 key={item.id}
                 onClick={() => onMarkRead(item.id)}
-                className={`p-3.5 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer ${
-                  item.is_read ? 'opacity-60' : 'bg-blue-50/20'
+                className={`p-3.5 flex items-start gap-3 hover:bg-[#F3ECE2]/60 transition-colors cursor-pointer ${
+                  item.is_read ? 'opacity-60' : 'bg-[#A9502B]/5'
                 }`}
               >
                 <div className="mt-0.5">{iconForType(item.type)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-semibold text-slate-900 truncate">{item.title}</p>
-                    <span className="text-[9px] text-slate-400 font-mono shrink-0">
+                    <p className="text-xs font-semibold text-[#1E1915] truncate">{item.title}</p>
+                    <span className="text-[9px] text-[#5B5048] font-mono shrink-0">
                       {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{item.message}</p>
+                  <p className="text-xs text-[#5B5048] mt-0.5 line-clamp-2">{item.message}</p>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        <div className="p-2 bg-slate-50 border-t border-slate-100 text-center">
+        <div className="p-2 bg-[#F3ECE2] border-t border-[#1E1915]/10 text-center">
           <button
             onClick={onClose}
-            className="text-[11px] font-medium text-blue-600 hover:text-blue-700"
+            className="text-[11px] font-medium text-[#A9502B] hover:text-[#8f3f1e]"
           >
             Close notification drawer
           </button>
